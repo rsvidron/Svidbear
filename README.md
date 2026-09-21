@@ -57,24 +57,30 @@ Picks also persist in `localStorage`, so a refresh never loses work.
 
 ## Deploying to Railway
 
-1. Push this repo to GitHub.
-2. In Railway: **New Project → Deploy from GitHub repo**, pick this repo.
-3. Railway's Nixpacks builder detects Node and runs `npm start`. `railway.json` already sets the
-   start command and points the healthcheck at `/healthz`.
-4. Under **Settings → Networking**, click **Generate Domain**.
+1. **New Project → Deploy from GitHub repo**, pick this repo. Nixpacks detects Node; `railway.json`
+   already sets `npm start` and points the healthcheck at `/healthz`.
+2. **Variables** → add exactly two:
 
-Railway injects `PORT` automatically — the server reads it and falls back to 3000 locally.
+   | Variable | Value |
+   | --- | --- |
+   | `SUPABASE_URL` | `https://<project>.supabase.co` |
+   | `SUPABASE_ANON_KEY` | the publishable key, `sb_publishable_…` |
 
-### Keeping submitted brackets across deploys
+3. **Settings → Networking → Generate Domain**.
+4. Copy that domain into Supabase under **Authentication → URL Configuration** (both *Site URL* and
+   *Redirect URLs*), or magic links will send people back to localhost.
 
-Entries are written to `data/entries.json`. Railway containers have ephemeral filesystems, so
-without a volume that file is wiped on every redeploy. To keep the pool:
+Do **not** set `PORT` — Railway injects it and the server reads it, falling back to 3000 locally.
+No volume is needed either: brackets live in Supabase, not on disk.
 
-1. Railway → your service → **Variables** → add `DATA_DIR=/data`.
-2. **Settings → Volumes** → **Add Volume**, mount path `/data`.
+The startup log says which backend is live, and `/healthz` reports the same:
 
-Entries are also held in memory, so the app works fine without a volume — you just start the pool
-over each time you deploy.
+```
+Svidbear listening on :8080 — brackets stored in Supabase
+```
+
+If it says "a local JSON file" instead, the two variables above did not reach the service, and any
+brackets people submit will be lost on the next deploy.
 
 ## Sources
 

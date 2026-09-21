@@ -27,21 +27,6 @@ const SUPABASE_KEY =
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
-/** No bundler here, so the browser gets supabase-js straight from node_modules. */
-function vendorSupabase() {
-  const from = path.join(__dirname, 'node_modules/@supabase/supabase-js/dist/umd/supabase.js');
-  const to = path.join(__dirname, 'public/vendor/supabase.js');
-  try {
-    if (fs.existsSync(to) && fs.statSync(to).mtimeMs >= fs.statSync(from).mtimeMs) return;
-    fs.mkdirSync(path.dirname(to), { recursive: true });
-    fs.copyFileSync(from, to);
-    console.log('vendored supabase-js');
-  } catch (err) {
-    console.warn('could not vendor supabase-js:', err.message);
-  }
-}
-vendorSupabase();
-
 /** @type {Map<string, object>} */
 const entries = new Map();
 
@@ -130,6 +115,16 @@ app.post('/api/entries', (req, res) => {
   res.status(prior ? 200 : 201).json({ entry });
 });
 
+// There is no bundler, so the browser gets supabase-js served straight out of
+// node_modules. Serving beats copying it into public/: nothing has to be written
+// at boot, so a read-only or slow filesystem cannot quietly drop the app back to
+// the local store.
+app.get('/vendor/supabase.js', (_req, res) =>
+  res.sendFile(path.join(__dirname, 'node_modules/@supabase/supabase-js/dist/umd/supabase.js'), {
+    maxAge: '1h',
+  })
+);
+
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
 // Entry permalinks render the app; the client reads the code off the path.
@@ -137,4 +132,10 @@ app.get('/b/:id', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'in
 
 app.use((_req, res) => res.status(404).sendFile(path.join(__dirname, 'public', 'index.html')));
 
-app.listen(PORT, () => console.log(`Svidbear listening on :${PORT}`));
+app.listen(PORT, () =>
+  console.log(
+    `Svidbear listening on :${PORT} — brackets stored in ${
+      supabaseReady ? 'Supabase' : 'a local JSON file (set SUPABASE_URL and SUPABASE_ANON_KEY)'
+    }`
+  )
+);
