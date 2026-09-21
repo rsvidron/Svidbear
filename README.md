@@ -103,8 +103,10 @@ writable only by the account that owns it. One bracket per person; submitting ag
    "The brackets table is missing".
 2. Copy `.env.example` to `.env` and fill in `SUPABASE_URL` and `SUPABASE_ANON_KEY` from
    **Project Settings → API**. On Railway, set the same two as service variables.
-3. In Supabase under **Authentication → URL Configuration**, add your Railway domain to the
-   redirect allow-list, or the magic link will bounce back to localhost.
+3. In Supabase under **Authentication → URL Configuration**, set *Site URL* to your deployed
+   origin and add `<origin>/**` to *Redirect URLs*. Add `http://localhost:3000/**` as well if you
+   want sign-in to work while developing — otherwise a local magic link redirects to production,
+   which looks like a broken link rather than a missing allow-list entry.
 4. Point Supabase at a real mail sender — see **Email delivery** below. Without this, sign-in
    silently stops working as soon as a couple of people try it.
 
