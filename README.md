@@ -105,10 +105,36 @@ writable only by the account that owns it. One bracket per person; submitting ag
    **Project Settings → API**. On Railway, set the same two as service variables.
 3. In Supabase under **Authentication → URL Configuration**, add your Railway domain to the
    redirect allow-list, or the magic link will bounce back to localhost.
+4. Point Supabase at a real mail sender — see **Email delivery** below. Without this, sign-in
+   silently stops working as soon as a couple of people try it.
 
 The publishable key is meant to reach the browser — `/api/config` hands it to the page, and RLS is
 what actually protects the data. Without those variables the app falls back to the local JSON store,
 so it still runs.
+
+## Email delivery
+
+Sign-in emails come from Supabase, not from this app — there is no mail code in the repo and no
+mail credential belongs in `.env`.
+
+Supabase's built-in sender is a sandbox: a couple of messages an hour, documented as testing-only.
+It is enough to convince you sign-in works and not enough for anyone else to actually get in. Point
+it at a real provider under **Authentication → Emails → SMTP Settings**. With Resend that is:
+
+| Field | Value |
+| --- | --- |
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | `resend` |
+| Password | a Resend API key scoped to this project |
+| Sender email | any address on a domain verified in Resend |
+
+Use a dedicated API key so it can be revoked without affecting anything else sharing the account.
+The free tier's 3,000/month is shared account-wide, which one sign-in email per person does not
+trouble.
+
+Then raise **Authentication → Rate Limits → "Rate limit for sending emails."** Configuring SMTP does
+not lift it, and the failure looks identical to having no SMTP at all.
 
 ## Photos
 
