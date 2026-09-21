@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Svidbear · Fat Bear Week 2026 Bracket</title>
+    <meta
+      name="description"
+      content="Pick all 16 Katmai brown bears through the Fat Bear Week 2026 bracket, read every contender's dossier, and share your picks."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%90%BB%3C/text%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <a class="skip" href="#board">Skip to the bracket</a>
+
+    <header class="masthead">
+      <div class="masthead__inner">
+        <p class="eyebrow">Katmai National Park &amp; Preserve · Brooks River</p>
+        <h1>
+          Fat Bear<span class="masthead__break"> </span>Week
+          <span class="masthead__year">2026</span>
+        </h1>
+        <p class="masthead__lede">
+          Sixteen brown bears. Four rounds. One crown. Fill out the whole bracket before the first
+          matchup closes, then send it to everyone who thinks they know a fat bear when they see one.
+        </p>
+        <dl class="facts">
+          <div><dt>Opens</dt><dd>Sept 22</dd></div>
+          <div><dt>Crowned</dt><dd>Sept 29</dd></div>
+          <div><dt>Field</dt><dd>16 bears</dd></div>
+          <div><dt>Picks</dt><dd><span id="factPicks">0</span>/15</dd></div>
+        </dl>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch theme">
+        <span class="theme-toggle__dot" aria-hidden="true"></span>
+        <span id="themeLabel">Auto</span>
+      </button>
+    </header>
+
+    <main>
+      <section class="board-wrap" id="board" aria-labelledby="boardTitle">
+        <div class="section-head">
+          <h2 id="boardTitle">The bracket</h2>
+          <p class="section-note">
+            Tap a bear to advance them. Changing an earlier pick clears everything it fed into.
+          </p>
+        </div>
+
+        <div class="board-scroll">
+          <div class="board" id="bracket"><!-- rendered by app.js --></div>
+        </div>
+
+        <p class="voting-note" id="votingNote"></p>
+      </section>
+
+      <section class="pool" id="pool" aria-labelledby="poolTitle">
+        <div class="section-head">
+          <h2 id="poolTitle">The pool</h2>
+          <p class="section-note">Every bracket submitted here, newest first.</p>
+        </div>
+        <div id="poolBody" class="pool__body">
+          <p class="pool__empty">No brackets in yet. Be the first.</p>
+        </div>
+      </section>
+
+      <section class="roster" id="roster" aria-labelledby="rosterTitle">
+        <div class="section-head">
+          <h2 id="rosterTitle">The field</h2>
+          <p class="section-note">
+            Sixteen dossiers — who they are, what marks them, and why they might win.
+          </p>
+        </div>
+        <div class="roster__grid" id="rosterGrid"><!-- rendered by app.js --></div>
+      </section>
+
+      <footer class="colophon">
+        <p>
+          Bear identifications, life histories, and the 2026 bracket come from
+          <a href="https://explore.org/fat-bear-week" rel="noopener">explore.org</a> and the
+          <a href="https://www.nps.gov/katm/learn/news/fat-bear-week-2026.htm" rel="noopener"
+            >National Park Service</a
+          >. This is an unofficial pool. Official votes are cast at
+          <a href="https://fatbearweek.org" rel="noopener">fatbearweek.org</a>.
+        </p>
+      </footer>
+    </main>
+
+    <div class="tray" role="region" aria-label="Your bracket">
+      <div class="tray__inner">
+        <div class="tray__progress">
+          <div class="meter" aria-hidden="true"><span id="meterFill" class="meter__fill"></span></div>
+          <p class="tray__count"><span id="trayCount">0 of 15</span> picks · <span id="trayChamp">no champion yet</span></p>
+        </div>
+        <div class="tray__actions">
+          <label class="visually-hidden" for="entryName">Your name</label>
+          <input id="entryName" class="field" type="text" maxlength="40" placeholder="Your name" autocomplete="name" />
+          <button id="submitBtn" class="btn btn--primary" type="button" disabled>Submit bracket</button>
+          <button id="shareBtn" class="btn" type="button">Copy link</button>
+          <button id="resetBtn" class="btn btn--quiet" type="button">Reset</button>
+        </div>
+      </div>
+      <p class="tray__status" id="trayStatus" role="status" aria-live="polite"></p>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

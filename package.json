@@ -1,0 +1,17 @@
+{
+  "name": "svidbear",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fat Bear Week 2026 bracket challenge — pick all 16 Katmai bears",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
