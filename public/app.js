@@ -5,12 +5,20 @@ const MATCH_BY_ID = new Map(MATCHES.map((m) => [m.id, m]));
 const FINAL = MATCHES[MATCHES.length - 1];
 const STORAGE_KEY = 'svidbear.bracket.v1';
 
-/** matchId -> bear id of the bear the user advanced */
+/** matchId -> bear id. Whatever the board is currently showing. */
 let picks = {};
+/** Your own picks, parked here while the board shows somebody else's. */
+let myPicks = null;
+/** { id, name } while viewing another person's bracket; null when it's yours. */
+let viewing = null;
+/** 'bracket' or 'pool' */
+let view = 'bracket';
 let entryId = null;
 let entryName = '';
 let store = null;
 let account = null;
+
+const isViewing = () => viewing !== null;
 
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, className, text) => {
@@ -140,6 +148,11 @@ function buildSlot(match, index, bearId) {
   const body = el('div', 'slot__body');
   body.append(name, el('span', 'slot__meta', bear.class));
   main.append(body);
+
+  if (isViewing()) {
+    row.append(main);
+    return row;
+  }
 
   const pick = el('button', 'slot__pick');
   pick.type = 'button';
@@ -277,6 +290,7 @@ function renderRoster() {
 let modalContext = null; // { bearId, matchId } while the dialog is open
 
 function togglePick(matchId, bearId) {
+  if (isViewing()) return;
   if (picks[matchId] === bearId) delete picks[matchId];
   else picks[matchId] = bearId;
   refresh();
@@ -509,7 +523,7 @@ function setStatus(message, tone) {
 }
 
 function refresh() {
-  prune();
+  if (!isViewing()) prune();
   renderBoard();
   updateTray();
   persist();
@@ -518,6 +532,8 @@ function refresh() {
 /* ── Persistence ────────────────────────────────────────── */
 
 function persist() {
+  // Viewing someone else must never overwrite what you saved.
+  if (isViewing()) return;
   try {
     localStorage.setItem(
       STORAGE_KEY,
@@ -543,54 +559,186 @@ function restore() {
 
 /* ── The pool ───────────────────────────────────────────── */
 
-function bearFromIndices(indices, matchId) {
-  // Resolve another person's index-encoded bracket without touching our own picks.
+/** Run fn with a different picks object in scope, then put yours back. */
+function withPicks(temp, fn) {
   const saved = picks;
-  picks = {};
-  MATCHES.forEach((match, i) => {
-    const idx = indices[i];
-    if (idx !== 0 && idx !== 1) return;
-    const bear = participants(match)[idx];
-    if (bear) picks[match.id] = bear;
+  picks = temp;
+  try {
+    return fn();
+  } finally {
+    picks = saved;
+  }
+}
+
+/** Turn a stored 0/1-per-matchup bracket into a picks object. */
+function picksFromIndices(indices) {
+  const out = {};
+  withPicks(out, () => {
+    MATCHES.forEach((match, i) => {
+      const idx = indices?.[i];
+      if (idx !== 0 && idx !== 1) return;
+      const bear = participants(match)[idx];
+      if (bear) out[match.id] = bear;
+    });
   });
-  const result = winnerOf(matchId);
-  picks = saved;
-  return result;
+  return out;
+}
+
+function championOf(indices) {
+  const resolved = picksFromIndices(indices);
+  return withPicks(resolved, () => winnerOf(FINAL.id));
+}
+
+/* ── Viewing someone else's bracket ─────────────────────── */
+
+function enterViewing(entry) {
+  if (!isViewing()) myPicks = picks;
+  viewing = { id: entry.id, name: entry.name };
+  picks = picksFromIndices(entry.picks);
+
+  setView('bracket', { push: false });
+  $('#guestName').textContent = `${entry.name} · ${entry.id}`;
+  $('#guestBanner').hidden = false;
+  $('#boardNote').textContent =
+    'Read-only. Tap any bear to read their dossier; nothing here changes your own picks.';
+  document.body.dataset.view = 'guest';
+  history.replaceState(null, '', `/b/${entry.id}`);
+  renderBoard();
+  updateTray();
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function exitViewing() {
+  if (!isViewing()) return;
+  viewing = null;
+  picks = myPicks ?? {};
+  myPicks = null;
+  $('#guestBanner').hidden = true;
+  $('#boardNote').textContent =
+    'Tap a bear to read their dossier, or use the ✓ to advance them straight away. Changing an earlier pick clears everything it fed into.';
+  delete document.body.dataset.view;
+  history.replaceState(null, '', '/');
+  refresh();
+  setStatus('Back on your own bracket.');
+}
+
+/* ── Switching between the two views ────────────────────── */
+
+function setView(next, { push = true } = {}) {
+  view = next === 'pool' ? 'pool' : 'bracket';
+  $('#viewBracket').hidden = view !== 'bracket';
+  $('#roster').hidden = view !== 'bracket';
+  $('#viewPool').hidden = view !== 'pool';
+  $('.tray').hidden = view !== 'bracket' || isViewing();
+
+  for (const tab of document.querySelectorAll('.viewnav__tab')) {
+    const active = tab.dataset.view === view;
+    tab.classList.toggle('viewnav__tab--active', active);
+    if (active) tab.setAttribute('aria-current', 'page');
+    else tab.removeAttribute('aria-current');
+  }
+
+  if (push) history.replaceState(null, '', view === 'pool' ? '/pool' : '/');
+  if (view === 'pool') {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    loadPool();
+  }
+}
+
+/* ── The pool page ──────────────────────────────────────── */
+
+function renderTally(entries) {
+  const counts = new Map();
+  for (const entry of entries) {
+    const champ = championOf(entry.picks);
+    if (champ) counts.set(champ, (counts.get(champ) ?? 0) + 1);
+  }
+
+  const tally = $('#tally');
+  const list = $('#tallyList');
+  list.replaceChildren();
+  if (!counts.size) {
+    tally.hidden = true;
+    return;
+  }
+  tally.hidden = false;
+
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const leader = ranked[0][1];
+
+  for (const [bearId, count] of ranked) {
+    const row = el('li', 'tally__row');
+
+    const face = el('img', 'tally__face');
+    face.src = `/bears/${bearId}-sm.webp`;
+    face.alt = '';
+    face.loading = 'lazy';
+    face.width = 40;
+    face.height = 40;
+
+    const label = el('div', 'tally__label');
+    label.append(el('span', 'tally__num', bearId), el('span', 'tally__name', bearLabel(bearId)));
+
+    const bar = el('div', 'tally__bar');
+    const fill = el('span', 'tally__fill');
+    fill.style.width = `${(count / leader) * 100}%`;
+    bar.append(fill);
+
+    const share = Math.round((count / entries.length) * 100);
+    row.append(face, label, bar, el('span', 'tally__count', `${count} · ${share}%`));
+    list.append(row);
+  }
+}
+
+function buildEntryCard(entry) {
+  const champ = championOf(entry.picks);
+  const mine = entry.mine || entry.id === entryId;
+  const card = el('button', mine ? 'entry entry--mine' : 'entry');
+  card.type = 'button';
+
+  if (champ) {
+    const face = el('img', 'entry__face');
+    face.src = `/bears/${champ}-sm.webp`;
+    face.alt = '';
+    face.loading = 'lazy';
+    face.width = 44;
+    face.height = 44;
+    card.append(face);
+  }
+
+  const body = el('div', 'entry__body');
+  const nameRow = el('div', 'entry__nameRow');
+  nameRow.append(el('span', 'entry__name', entry.name));
+  if (mine) nameRow.append(el('span', 'entry__badge', 'yours'));
+  body.append(nameRow);
+  body.append(
+    el('span', 'entry__pick', champ ? `${bearLabel(champ)} to win · ${champ}` : 'incomplete')
+  );
+  body.append(el('span', 'entry__code', entry.id));
+  card.append(body);
+
+  card.title = `Open ${entry.name}'s bracket, read-only`;
+  card.addEventListener('click', () => enterViewing(entry));
+  return card;
 }
 
 async function loadPool() {
   const body = $('#poolBody');
   try {
     const entries = await store.listEntries();
+    $('#navCount').textContent = entries.length ? String(entries.length) : '';
+    $('#poolSubtitle').textContent =
+      entries.length === 1 ? '1 bracket' : `${entries.length} brackets`;
+
+    renderTally(entries);
     body.replaceChildren();
     if (!entries.length) {
       body.append(el('p', 'pool__empty', 'No brackets in yet. Be the first.'));
       return;
     }
-    for (const entry of entries) {
-      const champ = bearFromIndices(entry.picks, FINAL.id);
-      const mine = entry.mine || entry.id === entryId;
-      const card = el('button', mine ? 'entry entry--mine' : 'entry');
-      card.type = 'button';
-      card.append(el('span', 'entry__name', entry.name));
-      card.append(
-        el('span', 'entry__pick', champ ? `${bearLabel(champ)} · ${champ}` : 'incomplete')
-      );
-      card.append(el('span', 'entry__code', entry.id));
-      card.title = 'Load this bracket';
-      card.addEventListener('click', () => {
-        decodePicksFromIndices(entry.picks);
-        entryName = entry.name;
-        entryId = entry.id;
-        $('#entryName').value = entry.name;
-        refresh();
-        setStatus(`Loaded ${entry.name}'s bracket (${entry.id}).`);
-        loadPool();
-        $('#board').scrollIntoView({ block: 'start' });
-      });
-      body.append(card);
-    }
+    for (const entry of entries) body.append(buildEntryCard(entry));
   } catch (err) {
+    $('#tally').hidden = true;
     body.replaceChildren(
       el(
         'p',
@@ -599,16 +747,6 @@ async function loadPool() {
       )
     );
   }
-}
-
-function decodePicksFromIndices(indices) {
-  picks = {};
-  MATCHES.forEach((match, i) => {
-    const idx = indices[i];
-    if (idx !== 0 && idx !== 1) return;
-    const bear = participants(match)[idx];
-    if (bear) picks[match.id] = bear;
-  });
 }
 
 async function submitBracket() {
@@ -713,6 +851,7 @@ async function init() {
   $('#submitBtn').addEventListener('click', submitBracket);
   $('#shareBtn').addEventListener('click', copyLink);
   $('#resetBtn').addEventListener('click', () => {
+    if (isViewing()) return exitViewing();
     picks = {};
     entryId = null;
     history.replaceState(null, '', '/');
@@ -728,7 +867,19 @@ async function init() {
     applyTheme(THEMES[(THEMES.indexOf(current) + 1) % THEMES.length]);
   });
 
+  $('#guestExit').addEventListener('click', exitViewing);
+
+  for (const tab of document.querySelectorAll('.viewnav__tab')) {
+    tab.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      // Leaving a guest bracket by either tab puts your own picks back first.
+      if (isViewing()) exitViewing();
+      setView(tab.dataset.view);
+    });
+  }
+
   initAuth();
+  setView(location.pathname === '/pool' ? 'pool' : 'bracket', { push: false });
   loadPool();
 
   if (pathCode) {
@@ -736,13 +887,7 @@ async function init() {
       .getEntry(pathCode)
       .then((entry) => {
         if (!entry) throw new Error(`No bracket with the code ${pathCode}.`);
-        decodePicksFromIndices(entry.picks);
-        entryName = entry.name;
-        entryId = entry.id;
-        $('#entryName').value = entry.name;
-        refresh();
-        setStatus(`Showing ${entry.name}'s bracket (${entry.id}).`);
-        loadPool();
+        enterViewing(entry);
       })
       .catch((err) => setStatus(err.message, 'error'));
   }

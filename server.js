@@ -127,10 +127,19 @@ app.get('/vendor/supabase.js', (_req, res) =>
 
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
-// Entry permalinks render the app; the client reads the code off the path.
-app.get('/b/:id', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// Client-side routes: the app shell answers, and the browser reads the path.
+// Enumerated rather than caught, so each returns a real 200 instead of a 404
+// that happens to render.
+const sendApp = (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/pool', sendApp);
+app.get('/b/:id', sendApp);
 
-app.use((_req, res) => res.status(404).sendFile(path.join(__dirname, 'public', 'index.html')));
+app.use((req, res) => {
+  // A path with an extension was after a file that does not exist; answering
+  // with HTML would just give an image tag a page of markup to choke on.
+  if (path.extname(req.path)) return res.status(404).type('text/plain').send('Not found');
+  res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 app.listen(PORT, () =>
   console.log(

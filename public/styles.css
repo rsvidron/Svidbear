@@ -14,6 +14,7 @@
   --accent-ink: #8f2f1d;
   --accent-wash: rgba(184, 64, 42, 0.1);
   --spruce: #2f5e4a;
+  --spruce-wash: rgba(47, 94, 74, 0.12);
   --gold: #9a6f16;
   --gold-wash: rgba(154, 111, 22, 0.12);
   --shadow: 0 1px 0 rgba(20, 33, 27, 0.06), 0 8px 24px -16px rgba(20, 33, 27, 0.4);
@@ -43,6 +44,7 @@
     --accent-ink: #f0836d;
     --accent-wash: rgba(224, 87, 60, 0.14);
     --spruce: #6fa189;
+    --spruce-wash: rgba(111, 161, 137, 0.16);
     --gold: #d0a24a;
     --gold-wash: rgba(208, 162, 74, 0.14);
     --shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 10px 28px -18px rgba(0, 0, 0, 0.9);
@@ -63,6 +65,7 @@
   --accent-ink: #f0836d;
   --accent-wash: rgba(224, 87, 60, 0.14);
   --spruce: #6fa189;
+  --spruce-wash: rgba(111, 161, 137, 0.16);
   --gold: #d0a24a;
   --gold-wash: rgba(208, 162, 74, 0.14);
   --shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 10px 28px -18px rgba(0, 0, 0, 0.9);
@@ -1721,5 +1724,299 @@ html {
   }
   .col__head {
     padding-top: 14px;
+  }
+}
+
+/* ═══ The two views ═════════════════════════════════════════════════════════ */
+
+.viewnav {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  align-self: flex-start;
+  background: var(--surface-2);
+}
+
+.viewnav__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.viewnav__tab--active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.viewnav__count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--spruce-wash);
+  color: var(--spruce);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-align: center;
+}
+.viewnav__count:empty {
+  display: none;
+}
+
+/* Someone else's bracket is deliberately a different colour from your own, so
+   the two can never be mistaken for each other at a glance. */
+body[data-view='guest'] {
+  --accent: var(--spruce);
+  --accent-ink: var(--spruce);
+  --accent-wash: var(--spruce-wash);
+}
+
+.guest {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-top: 20px;
+  padding: 12px 18px;
+  border: 1px solid var(--spruce);
+  border-radius: var(--radius);
+  background: var(--spruce-wash);
+  backdrop-filter: blur(8px);
+}
+
+.guest__who {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.guest__label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--spruce);
+}
+
+.guest__name {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.btn--guest {
+  background: var(--spruce);
+  border-color: var(--spruce);
+  color: #f4f8f5;
+}
+.btn--guest:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* ═══ Pool page ═════════════════════════════════════════════════════════════ */
+
+.tally {
+  margin-bottom: 40px;
+  padding: 22px 24px 24px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.tally__title {
+  margin: 0 0 16px;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.tally__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tally__row {
+  display: grid;
+  grid-template-columns: 40px minmax(120px, 170px) 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.tally__face {
+  width: 40px;
+  height: 40px;
+  border-radius: 3px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.tally__label {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.tally__num {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+.tally__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tally__bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.tally__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--spruce);
+}
+
+.tally__count {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.pool__subtitle {
+  margin: 0 0 14px;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.entry {
+  flex-direction: row;
+  align-items: center;
+  gap: 13px;
+}
+
+.entry__face {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 3px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.entry__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.entry__nameRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.entry__badge {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--spruce-wash);
+  color: var(--spruce);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.entry--mine {
+  border-color: var(--spruce);
+  background: var(--spruce-wash);
+}
+.entry:hover {
+  border-color: var(--spruce);
+}
+
+.entry__name,
+.entry__pick,
+.entry__code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+  .viewnav {
+    width: 100%;
+    align-self: stretch;
+  }
+  .viewnav__tab {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+  .guest {
+    margin-top: 14px;
+    padding: 10px 14px;
+  }
+  .btn--guest {
+    min-height: 44px;
+  }
+  .tally {
+    padding: 16px;
+  }
+  .tally__row {
+    grid-template-columns: 34px 1fr auto;
+    gap: 10px;
+  }
+  .tally__face {
+    width: 34px;
+    height: 34px;
+  }
+  .tally__bar {
+    grid-column: 2 / -1;
+    grid-row: 2;
   }
 }

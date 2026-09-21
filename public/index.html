@@ -42,6 +42,13 @@
           <div><dt>Field</dt><dd>16 bears</dd></div>
           <div><dt>Picks</dt><dd><span id="factPicks">0</span>/15</dd></div>
         </dl>
+
+        <nav class="viewnav" aria-label="Sections">
+          <a class="viewnav__tab" href="/" data-view="bracket">My bracket</a>
+          <a class="viewnav__tab" href="/pool" data-view="pool">
+            The pool <span class="viewnav__count" id="navCount"></span>
+          </a>
+        </nav>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch theme">
         <span class="theme-toggle__dot" aria-hidden="true"></span>
@@ -50,31 +57,53 @@
     </header>
 
     <main>
-      <section class="board-wrap" id="board" aria-labelledby="boardTitle">
-        <div class="section-head">
-          <h2 id="boardTitle">The bracket</h2>
-          <p class="section-note">
-            Tap a bear to read their dossier, or use the &#10003; to advance them straight away.
-            Changing an earlier pick clears everything it fed into.
-          </p>
+      <div id="viewBracket">
+        <div class="guest" id="guestBanner" hidden>
+          <div class="guest__who">
+            <span class="guest__label">Viewing someone else's bracket</span>
+            <strong class="guest__name" id="guestName"></strong>
+          </div>
+          <button class="btn btn--guest" type="button" id="guestExit">Back to my bracket</button>
         </div>
 
-        <div class="board-scroll">
-          <div class="board" id="bracket"><!-- rendered by app.js --></div>
-        </div>
+        <section class="board-wrap" id="board" aria-labelledby="boardTitle">
+          <div class="section-head">
+            <h2 id="boardTitle">The bracket</h2>
+            <p class="section-note" id="boardNote">
+              Tap a bear to read their dossier, or use the &#10003; to advance them straight away.
+              Changing an earlier pick clears everything it fed into.
+            </p>
+          </div>
 
-        <p class="voting-note" id="votingNote"></p>
-      </section>
+          <div class="board-scroll">
+            <div class="board" id="bracket"><!-- rendered by app.js --></div>
+          </div>
 
-      <section class="pool" id="pool" aria-labelledby="poolTitle">
-        <div class="section-head">
-          <h2 id="poolTitle">The pool</h2>
-          <p class="section-note">Every bracket submitted here, newest first.</p>
-        </div>
-        <div id="poolBody" class="pool__body">
-          <p class="pool__empty">No brackets in yet. Be the first.</p>
-        </div>
-      </section>
+          <p class="voting-note" id="votingNote"></p>
+        </section>
+      </div>
+
+      <div id="viewPool" hidden>
+        <section class="pool" aria-labelledby="poolTitle">
+          <div class="section-head">
+            <h2 id="poolTitle">The pool</h2>
+            <p class="section-note">
+              Every bracket submitted, and who the field is backing. Opening one shows it read-only —
+              your own picks are never touched.
+            </p>
+          </div>
+
+          <div class="tally" id="tally" hidden>
+            <h3 class="tally__title">Who the pool is backing for the crown</h3>
+            <ol class="tally__list" id="tallyList"></ol>
+          </div>
+
+          <h3 class="pool__subtitle" id="poolSubtitle">Brackets</h3>
+          <div id="poolBody" class="pool__body">
+            <p class="pool__empty">No brackets in yet. Be the first.</p>
+          </div>
+        </section>
+      </div>
 
       <section class="roster" id="roster" aria-labelledby="rosterTitle">
         <div class="section-head">
