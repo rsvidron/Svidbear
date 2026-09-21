@@ -80,55 +80,61 @@ function bearLabel(id) {
   return bear?.nickname ? `${bear.nickname}` : `Bear ${id}`;
 }
 
+/** Who could still arrive in this slot, for the "awaiting winner" placeholder. */
+function feederNames(match, index) {
+  const feeder = MATCH_BY_ID.get(match.from[index]);
+  return participants(feeder)
+    .map((bear, i) => bear ?? (feeder.slots ? feeder.slots[i] : '?'))
+    .join(' / ');
+}
+
 function buildSlot(match, index, bearId) {
+  const row = el('div', 'slot');
+
   if (!bearId) {
-    const feeder = MATCH_BY_ID.get(match.from[index]);
-    const names = participants(feeder)
-      .map((b, i) => (b ? b : feederSummary(feeder, i)))
-      .join(' / ');
-    const slot = el('button', 'slot slot--empty');
-    slot.type = 'button';
-    slot.disabled = true;
-    slot.append(el('span', 'slot__id', '—'));
+    row.classList.add('slot--empty');
+    const main = el('button', 'slot__main');
+    main.type = 'button';
+    main.disabled = true;
+    main.append(el('span', 'slot__id', '—'));
     const body = el('div', 'slot__body');
-    body.append(el('span', 'slot__name', 'Awaiting winner'), el('span', 'slot__meta', names));
-    slot.append(body);
-    return slot;
+    body.append(
+      el('span', 'slot__name', 'Awaiting winner'),
+      el('span', 'slot__meta', feederNames(match, index))
+    );
+    main.append(body);
+    row.append(main);
+    return row;
   }
 
   const bear = BEARS[bearId];
-  const slot = el('button', 'slot');
-  slot.type = 'button';
-  slot.dataset.match = match.id;
-  slot.dataset.bear = bearId;
-  if (picks[match.id] === bearId) slot.classList.add('slot--picked');
-  else if (picks[match.id]) slot.classList.add('slot--out');
-  slot.setAttribute('aria-pressed', String(picks[match.id] === bearId));
-  slot.setAttribute(
-    'aria-label',
-    `Advance ${bearLabel(bearId)}, bear ${bearId}, ${bear.class.toLowerCase()}`
-  );
+  const picked = picks[match.id] === bearId;
+  if (picked) row.classList.add('slot--picked');
+  else if (picks[match.id]) row.classList.add('slot--out');
 
-  slot.append(el('span', 'slot__id', bearId));
+  const main = el('button', 'slot__main');
+  main.type = 'button';
+  main.dataset.match = match.id;
+  main.dataset.bear = bearId;
+  main.setAttribute('aria-label', `Read the dossier for bear ${bearId}, ${bearLabel(bearId)}`);
+  main.append(el('span', 'slot__id', bearId));
   const body = el('div', 'slot__body');
   body.append(el('span', 'slot__name', bearLabel(bearId)), el('span', 'slot__meta', bear.class));
-  slot.append(body);
+  main.append(body);
 
-  const info = el('a', 'info', 'i');
-  info.href = `#bear-${bearId}`;
-  info.title = `Read the dossier for bear ${bearId}`;
-  info.setAttribute('aria-label', `Read the dossier for bear ${bearId}`);
-  info.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    flashDossier(bearId);
-  });
-  slot.append(info);
-  return slot;
-}
+  const pick = el('button', 'slot__pick');
+  pick.type = 'button';
+  pick.dataset.match = match.id;
+  pick.dataset.bear = bearId;
+  pick.setAttribute('aria-pressed', String(picked));
+  pick.setAttribute(
+    'aria-label',
+    picked ? `Undo advancing bear ${bearId}` : `Advance bear ${bearId} to the next round`
+  );
+  pick.append(el('span', 'slot__check', '✓'));
 
-function feederSummary(match, index) {
-  if (match.slots) return match.slots[index];
-  return '?';
+  row.append(main, pick);
+  return row;
 }
 
 function buildMatch(match) {
@@ -238,12 +244,108 @@ function renderRoster() {
   }
 }
 
-function flashDossier(bearId) {
-  const card = document.getElementById(`bear-${bearId}`);
-  if (!card) return;
-  card.classList.remove('dossier--flash');
-  void card.offsetWidth;
-  card.classList.add('dossier--flash');
+/* ── Bear dossier modal ─────────────────────────────────── */
+
+let modalContext = null; // { bearId, matchId } while the dialog is open
+
+function togglePick(matchId, bearId) {
+  if (picks[matchId] === bearId) delete picks[matchId];
+  else picks[matchId] = bearId;
+  refresh();
+}
+
+/** Restore focus to the same bear after a re-render blows away the trigger. */
+function focusPickButton(matchId, bearId) {
+  const btn = document.querySelector(
+    `.slot__pick[data-match="${matchId}"][data-bear="${bearId}"]`
+  );
+  btn?.focus();
+}
+
+function openBear(bearId, matchId) {
+  const bear = BEARS[bearId];
+  if (!bear) return;
+  const dialog = $('#bearModal');
+  const match = matchId ? MATCH_BY_ID.get(matchId) : null;
+  modalContext = { bearId, matchId };
+
+  $('#modalId').textContent = bearId;
+  $('#modalName').textContent = bearLabel(bearId);
+  $('#modalTagline').textContent = bear.tagline;
+  $('#modalMarks').textContent = bear.marks;
+  $('#modalBio').textContent = bear.bio;
+  $('#modalEdge').textContent = bear.edge;
+
+  const vitals = $('#modalVitals');
+  vitals.replaceChildren();
+  for (const [term, value] of [
+    ['Class', bear.class],
+    ['Sex', bear.sex],
+    ['Age', bear.age],
+    ['On record', bear.since],
+  ]) {
+    const pair = el('div');
+    pair.append(el('dt', null, term), el('dd', null, value));
+    vitals.append(pair);
+  }
+
+  const matchup = $('#modalMatchup');
+  const advance = $('#modalAdvance');
+  if (match) {
+    const others = participants(match).filter((b) => b !== bearId);
+    const rival = others[0];
+    const rivalIndex = participants(match).indexOf(null);
+    const facing = rival
+      ? `${bearLabel(rival)} (${rival})`
+      : `the winner of ${feederNames(match, rivalIndex < 0 ? 0 : rivalIndex)}`;
+    matchup.replaceChildren(
+      document.createTextNode(`${ROUND_LABELS[match.round].name} · ${match.date} — facing `),
+      el('strong', null, facing)
+    );
+    matchup.hidden = false;
+
+    const picked = picks[match.id] === bearId;
+    advance.textContent = picked
+      ? 'Undo this pick'
+      : match.id === FINAL.id
+        ? `Crown ${bearLabel(bearId)}`
+        : `Advance ${bearLabel(bearId)}`;
+    advance.hidden = false;
+  } else {
+    matchup.hidden = true;
+    advance.hidden = true;
+  }
+
+  dialog.showModal();
+  if (!advance.hidden) advance.focus();
+}
+
+function initModal() {
+  const dialog = $('#bearModal');
+
+  $('#modalAdvance').addEventListener('click', () => {
+    if (!modalContext?.matchId) return;
+    const { matchId, bearId } = modalContext;
+    togglePick(matchId, bearId);
+    dialog.close();
+    focusPickButton(matchId, bearId);
+  });
+
+  // Clicking the dimmed area outside the panel closes it.
+  dialog.addEventListener('click', (ev) => {
+    if (ev.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    const outside =
+      ev.clientX < box.left ||
+      ev.clientX > box.right ||
+      ev.clientY < box.top ||
+      ev.clientY > box.bottom;
+    if (outside) dialog.close();
+  });
+
+  dialog.addEventListener('close', () => {
+    modalContext = null;
+  });
 }
 
 function updateTray() {
@@ -448,13 +550,18 @@ function init() {
   }
   applyTheme(THEMES.includes(theme) ? theme : 'auto');
 
+  initModal();
+
   $('#bracket').addEventListener('click', (ev) => {
-    const slot = ev.target.closest('.slot');
-    if (!slot || slot.disabled || !slot.dataset.bear) return;
-    const { match, bear } = slot.dataset;
-    picks[match] = picks[match] === bear ? undefined : bear;
-    if (!picks[match]) delete picks[match];
-    refresh();
+    const pickBtn = ev.target.closest('.slot__pick');
+    if (pickBtn) {
+      const { match, bear } = pickBtn.dataset;
+      togglePick(match, bear);
+      focusPickButton(match, bear);
+      return;
+    }
+    const main = ev.target.closest('.slot__main');
+    if (main?.dataset.bear) openBear(main.dataset.bear, main.dataset.match);
   });
 
   $('#submitBtn').addEventListener('click', submitBracket);

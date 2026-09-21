@@ -22,7 +22,8 @@ Then open http://localhost:3000.
 - `public/styles.css` — full light/dark token system; the bracket connectors are pure CSS.
 - `server.js` — Express. Serves `public/` and a small JSON API for submitted brackets.
 
-Picks are stored by bear, not by slot position, so changing an early matchup automatically clears
+Tapping a bear opens their dossier in a modal with an "Advance" button; the check circle on the
+right of each row advances them in one click. Picks are stored by bear, not by slot position, so changing an early matchup automatically clears
 every later pick that depended on it.
 
 ### Sharing

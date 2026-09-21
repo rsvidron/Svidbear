@@ -73,6 +73,11 @@
   box-sizing: border-box;
 }
 
+/* Class-based display rules outrank the UA sheet, so make [hidden] win outright. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -431,12 +436,30 @@ main {
 
 .slot {
   display: flex;
+  align-items: stretch;
+  width: 100%;
+  transition: background 0.14s ease;
+}
+.slot + .slot {
+  border-top: 1px solid var(--rule-soft);
+}
+.match .slot:first-of-type {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.match .slot:last-of-type {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* The wide half reads the dossier; the narrow half advances the bear. */
+.slot__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
-  padding: 11px 12px;
+  padding: 11px 8px 11px 12px;
   border: 0;
-  border-radius: 0;
+  border-radius: inherit;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -444,21 +467,45 @@ main {
   cursor: pointer;
   transition: background 0.14s ease;
 }
-.slot + .slot {
-  border-top: 1px solid var(--rule-soft);
-}
-.match .slot:first-child {
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-.match .slot:last-child {
-  border-radius: 0 0 var(--radius) var(--radius);
-}
-.slot:hover:not(:disabled) {
+.slot__main:hover {
   background: var(--surface-2);
 }
-.slot:disabled {
+.slot--empty .slot__main {
   cursor: default;
-  color: var(--ink-faint);
+}
+.slot--empty .slot__main:hover {
+  background: transparent;
+}
+
+.slot__pick {
+  flex: none;
+  width: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--rule-soft);
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.slot__pick:hover .slot__check {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.slot__check {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  color: transparent;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
 
 .slot__id {
@@ -513,6 +560,15 @@ main {
 .slot--picked .slot__name {
   font-weight: 800;
 }
+.slot--picked .slot__check {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fdf7f4;
+}
+.slot--picked .slot__pick:hover .slot__check {
+  background: transparent;
+  color: var(--accent);
+}
 
 .slot--empty .slot__name {
   font-family: var(--body);
@@ -525,23 +581,217 @@ main {
   opacity: 0.45;
 }
 
-.info {
-  flex: none;
-  margin-left: auto;
-  width: 22px;
-  height: 22px;
+/* ── Bear dossier modal ─────────────────────────────────── */
+
+.modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(86vh, 760px);
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.modal::backdrop {
+  background: rgba(8, 14, 11, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.modal[open] {
+  animation: modal-in 0.18s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.modal__form {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  margin: 0;
+}
+
+.modal__head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px 26px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.modal__id {
+  font-family: var(--mono);
+  font-size: 2.1rem;
+  font-weight: 500;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.modal__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.modal__name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.modal__tagline {
+  margin: 0;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
   border: 1px solid var(--rule);
   border-radius: 50%;
-  background: transparent;
-  color: var(--ink-faint);
+  background: var(--surface-2);
+  color: var(--ink-soft);
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
 }
-.info:hover {
+.modal__close:hover {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+.modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 26px 24px;
+  overflow-y: auto;
+}
+
+.modal__matchup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.modal__matchup strong {
+  color: var(--ink);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.modal__vitals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.modal__vitals div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 11px;
+  border-left: 2px solid var(--rule);
+}
+
+.modal__vitals dt {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.modal__vitals dd {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.modal__marks,
+.modal__bio {
+  margin: 0;
+}
+
+.modal__marks {
+  font-size: 0.94rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.modal__edge {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--gold-wash);
+  border: 1px solid var(--gold);
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 0.94rem;
+  color: var(--ink);
+}
+.modal__edge::before {
+  content: 'Why they win';
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 5px;
+}
+
+.modal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 14px 26px;
+  border-top: 1px solid var(--rule);
+  background: var(--surface-2);
+}
+
+.modal__hint {
+  margin: 0;
+  margin-right: auto;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-faint);
 }
 
 /* Champion plate in the middle column */
@@ -679,19 +929,6 @@ main {
   padding: 22px 24px 26px;
   background: var(--surface);
   scroll-margin-top: 24px;
-}
-
-@keyframes flash {
-  0%,
-  100% {
-    background: var(--surface);
-  }
-  30% {
-    background: var(--accent-wash);
-  }
-}
-.dossier--flash {
-  animation: flash 1.1s ease;
 }
 
 .dossier__head {
