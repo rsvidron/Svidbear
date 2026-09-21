@@ -99,7 +99,7 @@ function buildSlot(match, index, bearId) {
     const main = el('button', 'slot__main');
     main.type = 'button';
     main.disabled = true;
-    main.append(el('span', 'slot__id', '—'));
+    main.append(el('span', 'slot__face slot__face--blank'));
     const body = el('div', 'slot__body');
     body.append(
       el('span', 'slot__name', 'Awaiting winner'),
@@ -127,9 +127,14 @@ function buildSlot(match, index, bearId) {
   face.loading = 'lazy';
   face.width = 36;
   face.height = 36;
-  main.append(face, el('span', 'slot__id', bearId));
+  main.append(face);
+
+  const name = el('span', 'slot__name');
+  name.append(el('span', 'slot__num', bearId));
+  if (bear.nickname) name.append(el('span', 'slot__nick', bear.nickname));
+
   const body = el('div', 'slot__body');
-  body.append(el('span', 'slot__name', bearLabel(bearId)), el('span', 'slot__meta', bear.class));
+  body.append(name, el('span', 'slot__meta', bear.class));
   main.append(body);
 
   const pick = el('button', 'slot__pick');
