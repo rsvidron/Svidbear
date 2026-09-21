@@ -1258,3 +1258,60 @@ main {
     position: static;
   }
 }
+
+/* ── Account controls ───────────────────────────────────── */
+
+.tray__auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  margin-right: 4px;
+  border-right: 1px solid var(--rule);
+}
+
+.tray__who {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.modal--narrow {
+  width: min(420px, calc(100vw - 32px));
+}
+
+.field--wide {
+  width: 100%;
+  font-size: 1rem;
+  padding: 11px 13px;
+}
+
+.modal__note {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ink-faint);
+}
+.modal__note[data-tone='ok'] {
+  color: var(--spruce);
+}
+.modal__note[data-tone='error'] {
+  color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  .tray__auth {
+    width: 100%;
+    padding-right: 0;
+    margin-right: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 8px;
+  }
+  .tray__who {
+    margin-right: auto;
+  }
+}

@@ -4,13 +4,43 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
+try {
+  process.loadEnvFile();
+} catch {
+  // no .env file — Railway injects real environment variables instead
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STORE = path.join(DATA_DIR, 'entries.json');
 const MATCH_COUNT = 15;
 
+// Both spellings work, so the keys Supabase hands you paste in unchanged.
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY =
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  '';
+
 fs.mkdirSync(DATA_DIR, { recursive: true });
+
+/** No bundler here, so the browser gets supabase-js straight from node_modules. */
+function vendorSupabase() {
+  const from = path.join(__dirname, 'node_modules/@supabase/supabase-js/dist/umd/supabase.js');
+  const to = path.join(__dirname, 'public/vendor/supabase.js');
+  try {
+    if (fs.existsSync(to) && fs.statSync(to).mtimeMs >= fs.statSync(from).mtimeMs) return;
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+    console.log('vendored supabase-js');
+  } catch (err) {
+    console.warn('could not vendor supabase-js:', err.message);
+  }
+}
+vendorSupabase();
 
 /** @type {Map<string, object>} */
 const entries = new Map();
@@ -61,7 +91,16 @@ const app = express();
 app.set('trust proxy', true);
 app.use(express.json({ limit: '8kb' }));
 
-app.get('/healthz', (_req, res) => res.json({ ok: true, entries: entries.size }));
+const supabaseReady = Boolean(SUPABASE_URL && SUPABASE_KEY);
+
+app.get('/healthz', (_req, res) =>
+  res.json({ ok: true, backend: supabaseReady ? 'supabase' : 'local', entries: entries.size })
+);
+
+// The publishable key is meant to reach the browser; row-level security is what protects the data.
+app.get('/api/config', (_req, res) =>
+  res.json(supabaseReady ? { supabase: { url: SUPABASE_URL, key: SUPABASE_KEY } } : { supabase: null })
+);
 
 // Everyone's entries, newest first. Picks included so the pool view can compare.
 app.get('/api/entries', (_req, res) => {

@@ -1,4 +1,5 @@
 import { BEARS, MATCHES, ROUND_LABELS, EVENT } from '/data.js';
+import { createStore } from '/store.js';
 
 const MATCH_BY_ID = new Map(MATCHES.map((m) => [m.id, m]));
 const FINAL = MATCHES[MATCHES.length - 1];
@@ -8,6 +9,8 @@ const STORAGE_KEY = 'svidbear.bracket.v1';
 let picks = {};
 let entryId = null;
 let entryName = '';
+let store = null;
+let account = null;
 
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, className, text) => {
@@ -343,8 +346,114 @@ function initModal() {
     if (outside) dialog.close();
   });
 
+  closeOnBackdrop(dialog);
+
   dialog.addEventListener('close', () => {
     modalContext = null;
+  });
+}
+
+/** Clicking the dimmed area outside a dialog's panel closes it. */
+function closeOnBackdrop(dialog) {
+  dialog.addEventListener('click', (ev) => {
+    if (ev.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    const outside =
+      ev.clientX < box.left ||
+      ev.clientX > box.right ||
+      ev.clientY < box.top ||
+      ev.clientY > box.bottom;
+    if (outside) dialog.close();
+  });
+}
+
+/* ── Accounts ───────────────────────────────────────────── */
+
+const AUTH_BLURB = 'Signing in ties the bracket to you, so nobody else can edit your picks.';
+
+function setAuthMessage(text, tone) {
+  const node = $('#authMessage');
+  node.textContent = text;
+  if (tone) node.dataset.tone = tone;
+  else delete node.dataset.tone;
+}
+
+function renderAuth() {
+  const bar = $('#trayAuth');
+  if (!store.needsAuth) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  bar.replaceChildren();
+
+  if (account) {
+    bar.append(el('span', 'tray__who', account.email));
+    const out = el('button', 'btn btn--quiet', 'Sign out');
+    out.type = 'button';
+    out.addEventListener('click', async () => {
+      await store.signOut();
+      setStatus('Signed out. Your picks stay on this device.');
+    });
+    bar.append(out);
+  } else {
+    const button = el('button', 'btn', 'Sign in');
+    button.type = 'button';
+    button.addEventListener('click', () => openAuth());
+    bar.append(button);
+  }
+}
+
+function openAuth(message) {
+  setAuthMessage(message ?? AUTH_BLURB);
+  $('#authModal').showModal();
+  $('#authEmail').focus();
+}
+
+function initAuth() {
+  const dialog = $('#authModal');
+  let authReady = false;
+
+  for (const btn of dialog.querySelectorAll('[data-close]')) {
+    btn.addEventListener('click', () => dialog.close());
+  }
+  closeOnBackdrop(dialog);
+
+  $('#authForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const email = $('#authEmail').value.trim();
+    const button = $('#authSubmit');
+    button.disabled = true;
+    setAuthMessage('Sending…');
+    try {
+      await store.signIn(email);
+      setAuthMessage(`Link sent to ${email}. Open it on this device and you are in.`, 'ok');
+    } catch (err) {
+      setAuthMessage(err.message, 'error');
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  store.onAuthChange((user) => {
+    const signedIn = Boolean(user) && !account;
+    account = user;
+    renderAuth();
+
+    if (user) {
+      dialog.close();
+      if (!$('#entryName').value.trim()) {
+        entryName = user.email.split('@')[0];
+        $('#entryName').value = entryName;
+        persist();
+      }
+      if (signedIn && authReady) {
+        setStatus(`Signed in as ${user.email}.`);
+        if (isComplete()) submitBracket();
+      }
+    }
+    if (authReady) loadPool();
+    authReady = true;
   });
 }
 
@@ -418,9 +527,7 @@ function bearFromIndices(indices, matchId) {
 async function loadPool() {
   const body = $('#poolBody');
   try {
-    const res = await fetch('/api/entries');
-    if (!res.ok) throw new Error('bad response');
-    const { entries } = await res.json();
+    const entries = await store.listEntries();
     body.replaceChildren();
     if (!entries.length) {
       body.append(el('p', 'pool__empty', 'No brackets in yet. Be the first.'));
@@ -428,7 +535,8 @@ async function loadPool() {
     }
     for (const entry of entries) {
       const champ = bearFromIndices(entry.picks, FINAL.id);
-      const card = el('button', entry.id === entryId ? 'entry entry--mine' : 'entry');
+      const mine = entry.mine || entry.id === entryId;
+      const card = el('button', mine ? 'entry entry--mine' : 'entry');
       card.type = 'button';
       card.append(el('span', 'entry__name', entry.name));
       card.append(
@@ -448,9 +556,13 @@ async function loadPool() {
       });
       body.append(card);
     }
-  } catch {
+  } catch (err) {
     body.replaceChildren(
-      el('p', 'pool__error', 'Could not reach the pool right now. Your own picks are still saved.')
+      el(
+        'p',
+        'pool__error',
+        `Could not reach the pool right now (${err.message}). Your own picks are still saved.`
+      )
     );
   }
 }
@@ -466,6 +578,10 @@ function decodePicksFromIndices(indices) {
 }
 
 async function submitBracket() {
+  if (store.needsAuth && !account) {
+    openAuth('Sign in and your bracket gets submitted straight after.');
+    return;
+  }
   const name = $('#entryName').value.trim();
   if (!name) {
     setStatus('Add your name so the pool knows whose bracket this is.', 'error');
@@ -476,14 +592,9 @@ async function submitBracket() {
   $('#submitBtn').disabled = true;
   setStatus('Submitting…');
   try {
-    const res = await fetch('/api/entries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, picks: picksAsIndices(), id: entryId }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? 'Submission failed.');
-    entryId = data.entry.id;
+    const entry = await store.saveEntry({ name, picks: picksAsIndices(), id: entryId });
+    entryId = entry.id;
+    store.adopt?.(entry.id);
     persist();
     history.replaceState(null, '', `/b/${entryId}`);
     setStatus(`Locked in as ${entryId}. The link in your address bar loads this bracket.`);
@@ -524,8 +635,9 @@ function applyTheme(theme) {
 
 /* ── Wiring ─────────────────────────────────────────────── */
 
-function init() {
+async function init() {
   $('#votingNote').textContent = EVENT.votingNote;
+  store = await createStore();
 
   const params = new URLSearchParams(location.search);
   const shared = params.get('p');
@@ -582,12 +694,14 @@ function init() {
     applyTheme(THEMES[(THEMES.indexOf(current) + 1) % THEMES.length]);
   });
 
+  initAuth();
   loadPool();
 
   if (pathCode) {
-    fetch(`/api/entries/${pathCode}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Bracket not found.'))))
-      .then(({ entry }) => {
+    store
+      .getEntry(pathCode)
+      .then((entry) => {
+        if (!entry) throw new Error(`No bracket with the code ${pathCode}.`);
         decodePicksFromIndices(entry.picks);
         entryName = entry.name;
         entryId = entry.id;

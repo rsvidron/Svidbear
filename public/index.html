@@ -100,6 +100,7 @@
           <p class="tray__count"><span id="trayCount">0 of 15</span> picks · <span id="trayChamp">no champion yet</span></p>
         </div>
         <div class="tray__actions">
+          <div class="tray__auth" id="trayAuth" hidden></div>
           <label class="visually-hidden" for="entryName">Your name</label>
           <input id="entryName" class="field" type="text" maxlength="40" placeholder="Your name" autocomplete="name" />
           <button id="submitBtn" class="btn btn--primary" type="button" disabled>Submit bracket</button>
@@ -133,6 +134,40 @@
           <p class="modal__hint">Esc to close</p>
           <button class="btn" type="submit" value="close">Close</button>
           <button class="btn btn--primary" type="button" id="modalAdvance"></button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="modal modal--narrow" id="authModal" aria-labelledby="authTitle">
+      <form class="modal__form" id="authForm">
+        <div class="modal__head">
+          <div class="modal__titles">
+            <h2 class="modal__name" id="authTitle">Sign in to enter</h2>
+            <p class="modal__tagline">
+              We email you a link that signs you straight in. No password to remember.
+            </p>
+          </div>
+          <button class="modal__close" type="button" data-close aria-label="Close">&#215;</button>
+        </div>
+
+        <div class="modal__body">
+          <label class="visually-hidden" for="authEmail">Email address</label>
+          <input
+            class="field field--wide"
+            id="authEmail"
+            type="email"
+            required
+            placeholder="you@example.com"
+            autocomplete="email"
+          />
+          <p class="modal__note" id="authMessage" role="status" aria-live="polite">
+            Signing in ties the bracket to you, so nobody else can edit your picks.
+          </p>
+        </div>
+
+        <div class="modal__foot">
+          <button class="btn" type="button" data-close>Cancel</button>
+          <button class="btn btn--primary" type="submit" id="authSubmit">Email me a link</button>
         </div>
       </form>
     </dialog>
