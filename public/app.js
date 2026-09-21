@@ -20,6 +20,13 @@ let account = null;
 
 const isViewing = () => viewing !== null;
 
+/** Last-loaded pool, so a guest bracket can step to the next one. */
+let poolEntries = [];
+
+const BOARD_NOTE =
+  'Tap a bear to read their dossier, or use the ✓ to advance them straight away. ' +
+  'Changing an earlier pick clears everything it fed into.';
+
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -593,33 +600,67 @@ function championOf(indices) {
 
 function enterViewing(entry) {
   if (!isViewing()) myPicks = picks;
-  viewing = { id: entry.id, name: entry.name };
+  const index = poolEntries.findIndex((e) => e.id === entry.id);
+  viewing = { id: entry.id, name: entry.name, index };
   picks = picksFromIndices(entry.picks);
 
   setView('bracket', { push: false });
   $('#guestName').textContent = `${entry.name} · ${entry.id}`;
+  $('#guestPos').textContent =
+    index >= 0 && poolEntries.length ? `${index + 1} of ${poolEntries.length}` : 'a shared bracket';
   $('#guestBanner').hidden = false;
   $('#boardNote').textContent =
     'Read-only. Tap any bear to read their dossier; nothing here changes your own picks.';
   document.body.dataset.view = 'guest';
   history.replaceState(null, '', `/b/${entry.id}`);
+  syncGuestPicker();
   renderBoard();
   updateTray();
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
-function exitViewing() {
-  if (!isViewing()) return;
+/** Rebuild the dropdown and enable or disable the step buttons. */
+function syncGuestPicker() {
+  const select = $('#guestSelect');
+  const many = poolEntries.length > 1;
+
+  select.replaceChildren();
+  for (const entry of poolEntries) {
+    const champ = championOf(entry.picks);
+    const option = el('option', null, champ ? `${entry.name} — ${bearLabel(champ)}` : entry.name);
+    option.value = entry.id;
+    select.append(option);
+  }
+  if (viewing) select.value = viewing.id;
+
+  select.disabled = !poolEntries.length;
+  $('#guestPrev').disabled = !many;
+  $('#guestNext').disabled = !many;
+  $('#guestPos').hidden = !poolEntries.length;
+}
+
+/** Step through the pool, wrapping at both ends. */
+function stepGuest(delta) {
+  if (!poolEntries.length) return;
+  const from = viewing?.index ?? 0;
+  const next = (from + delta + poolEntries.length) % poolEntries.length;
+  enterViewing(poolEntries[next]);
+}
+
+function exitViewing(to = 'bracket') {
+  if (!isViewing()) {
+    setView(to);
+    return;
+  }
   viewing = null;
   picks = myPicks ?? {};
   myPicks = null;
   $('#guestBanner').hidden = true;
-  $('#boardNote').textContent =
-    'Tap a bear to read their dossier, or use the ✓ to advance them straight away. Changing an earlier pick clears everything it fed into.';
+  $('#boardNote').textContent = BOARD_NOTE;
   delete document.body.dataset.view;
-  history.replaceState(null, '', '/');
   refresh();
-  setStatus('Back on your own bracket.');
+  setView(to);
+  setStatus(to === 'pool' ? 'Back to every bracket.' : 'Back on your own bracket.');
 }
 
 /* ── Switching between the two views ────────────────────── */
@@ -639,6 +680,7 @@ function setView(next, { push = true } = {}) {
   }
 
   if (push) history.replaceState(null, '', view === 'pool' ? '/pool' : '/');
+  if (!isViewing()) syncGuestPicker();
   if (view === 'pool') {
     window.scrollTo({ top: 0, behavior: 'auto' });
     loadPool();
@@ -726,6 +768,7 @@ async function loadPool() {
   const body = $('#poolBody');
   try {
     const entries = await store.listEntries();
+    poolEntries = entries;
     $('#navCount').textContent = entries.length ? String(entries.length) : '';
     $('#poolSubtitle').textContent =
       entries.length === 1 ? '1 bracket' : `${entries.length} brackets`;
@@ -851,7 +894,7 @@ async function init() {
   $('#submitBtn').addEventListener('click', submitBracket);
   $('#shareBtn').addEventListener('click', copyLink);
   $('#resetBtn').addEventListener('click', () => {
-    if (isViewing()) return exitViewing();
+    if (isViewing()) return exitViewing('pool');
     picks = {};
     entryId = null;
     history.replaceState(null, '', '/');
@@ -867,14 +910,31 @@ async function init() {
     applyTheme(THEMES[(THEMES.indexOf(current) + 1) % THEMES.length]);
   });
 
-  $('#guestExit').addEventListener('click', exitViewing);
+  $('#guestExit').addEventListener('click', () => exitViewing('pool'));
+  $('#guestPrev').addEventListener('click', () => stepGuest(-1));
+  $('#guestNext').addEventListener('click', () => stepGuest(1));
+  $('#guestSelect').addEventListener('change', (ev) => {
+    const entry = poolEntries.find((e) => e.id === ev.target.value);
+    if (entry) enterViewing(entry);
+  });
+
+  // Arrow keys page through the pool, except while typing in a field.
+  document.addEventListener('keydown', (ev) => {
+    if (!isViewing() || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    // Guard the instanceof: a key event can be targeted at the document itself,
+    // which has no closest().
+    if (ev.target instanceof Element && ev.target.closest('input, select, textarea')) return;
+    if (ev.key === 'ArrowLeft') stepGuest(-1);
+    else if (ev.key === 'ArrowRight') stepGuest(1);
+    else if (ev.key === 'Escape' && !document.querySelector('dialog[open]')) exitViewing('pool');
+  });
 
   for (const tab of document.querySelectorAll('.viewnav__tab')) {
     tab.addEventListener('click', (ev) => {
       ev.preventDefault();
       // Leaving a guest bracket by either tab puts your own picks back first.
-      if (isViewing()) exitViewing();
-      setView(tab.dataset.view);
+      if (isViewing()) exitViewing(tab.dataset.view);
+      else setView(tab.dataset.view);
     });
   }
 

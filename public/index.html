@@ -60,10 +60,22 @@
       <div id="viewBracket">
         <div class="guest" id="guestBanner" hidden>
           <div class="guest__who">
-            <span class="guest__label">Viewing someone else's bracket</span>
+            <span class="guest__label">Viewing <span id="guestPos"></span></span>
             <strong class="guest__name" id="guestName"></strong>
           </div>
-          <button class="btn btn--guest" type="button" id="guestExit">Back to my bracket</button>
+
+          <div class="guest__pick">
+            <button class="btn btn--step" type="button" id="guestPrev" aria-label="Previous bracket">
+              &#8249;
+            </button>
+            <label class="visually-hidden" for="guestSelect">Whose bracket to show</label>
+            <select class="guest__select" id="guestSelect"></select>
+            <button class="btn btn--step" type="button" id="guestNext" aria-label="Next bracket">
+              &#8250;
+            </button>
+          </div>
+
+          <button class="btn btn--guest" type="button" id="guestExit">All brackets</button>
         </div>
 
         <section class="board-wrap" id="board" aria-labelledby="boardTitle">

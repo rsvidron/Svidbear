@@ -2020,3 +2020,86 @@ body[data-view='guest'] {
     grid-row: 2;
   }
 }
+
+/* ── Stepping between brackets in the pool ──────────────── */
+
+.guest__pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.guest__select {
+  min-width: 0;
+  max-width: 260px;
+  flex: 1;
+  padding: 9px 11px;
+  border: 1px solid var(--spruce);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+.guest__select:disabled {
+  opacity: 0.5;
+}
+
+.btn--step {
+  flex: none;
+  width: 38px;
+  padding: 0;
+  min-height: 38px;
+  border-color: var(--spruce);
+  background: var(--surface);
+  color: var(--spruce);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.btn--step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1000px) {
+  /* Two rows, not four — this bar is sticky, so every pixel of it is a pixel
+     of bracket the reader never sees. */
+  .guest {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'who exit'
+      'pick pick';
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+  }
+  .guest__who {
+    grid-area: who;
+  }
+  .guest__name {
+    font-size: 0.95rem;
+  }
+  .guest__pick {
+    grid-area: pick;
+    width: 100%;
+  }
+  #guestExit {
+    grid-area: exit;
+    padding: 8px 12px;
+    min-height: 40px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .guest__select {
+    max-width: none;
+    font-size: 16px; /* stop iOS zooming when the picker opens */
+    min-height: 44px;
+  }
+  .btn--step {
+    width: 44px;
+    min-height: 44px;
+  }
+}
