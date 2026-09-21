@@ -1,4 +1,4 @@
-import { BEARS, MATCHES, ROUND_LABELS, EVENT } from '/data.js';
+import { BEARS, MATCHES, ROUND_LABELS, EVENT, PHOTOS } from '/data.js';
 import { createStore } from '/store.js';
 
 const MATCH_BY_ID = new Map(MATCHES.map((m) => [m.id, m]));
@@ -120,7 +120,14 @@ function buildSlot(match, index, bearId) {
   main.dataset.match = match.id;
   main.dataset.bear = bearId;
   main.setAttribute('aria-label', `Read the dossier for bear ${bearId}, ${bearLabel(bearId)}`);
-  main.append(el('span', 'slot__id', bearId));
+
+  const face = el('img', 'slot__face');
+  face.src = `/bears/${bearId}-sm.webp`;
+  face.alt = '';
+  face.loading = 'lazy';
+  face.width = 36;
+  face.height = 36;
+  main.append(face, el('span', 'slot__id', bearId));
   const body = el('div', 'slot__body');
   body.append(el('span', 'slot__name', bearLabel(bearId)), el('span', 'slot__meta', bear.class));
   main.append(body);
@@ -230,6 +237,12 @@ function renderRoster() {
     const card = el('article', 'dossier');
     card.id = `bear-${id}`;
 
+    const photo = el('img', 'dossier__photo');
+    photo.src = `/bears/${id}.webp`;
+    photo.alt = `Bear ${id}, ${bearLabel(id)}, at Brooks River in September 2026`;
+    photo.loading = 'lazy';
+    card.append(photo);
+
     const head = el('div', 'dossier__head');
     head.append(el('span', 'dossier__id', id));
     head.append(el('h3', 'dossier__name', bear.nickname || bear.tagline.split(',')[0]));
@@ -272,7 +285,16 @@ function openBear(bearId, matchId) {
   const match = matchId ? MATCH_BY_ID.get(matchId) : null;
   modalContext = { bearId, matchId };
 
+  const photo = $('#modalPhoto');
+  const shot = PHOTOS[bearId];
+  photo.src = `/bears/${bearId}.webp`;
+  photo.alt = `Bear ${bearId}, ${bearLabel(bearId)}, photographed at Brooks River in September 2026`;
+  $('#modalCredit').textContent = shot ? `${shot.date} · Courtesy of ${shot.credit} / explore.org` : '';
+
+  // A nicknamed bear reads "32 Chunk"; an unnamed one is just "Bear 901",
+  // so the big number would only repeat itself.
   $('#modalId').textContent = bearId;
+  $('#modalId').hidden = !bear.nickname;
   $('#modalName').textContent = bearLabel(bearId);
   $('#modalTagline').textContent = bear.tagline;
   $('#modalMarks').textContent = bear.marks;

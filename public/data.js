@@ -225,6 +225,30 @@ export const MATCHES = [
   { id: 'm15', round: 3, side: 'F', date: 'Sept 29', from: ['m13', 'm14'] },
 ];
 
+/**
+ * Each bear's September portrait, lifted from the explore.org bracket cards.
+ * The date and photographer were printed on the card; they move here so the
+ * photograph itself stays clean and the credit stays attached.
+ */
+export const PHOTOS = {
+  132: { date: 'September 9, 2026', credit: 'C. Loberg' },
+  284: { date: 'September 3, 2026', credit: 'C. Loberg' },
+  806: { date: 'September 10, 2026', credit: 'T. Carmack' },
+  901: { date: 'September 2, 2026', credit: 'C. Loberg' },
+  909: { date: 'September 8, 2026', credit: 'T. Carmack' },
+  428: { date: 'September 3, 2026', credit: 'T. Carmack' },
+  131: { date: 'September 9, 2026', credit: 'C. Loberg' },
+  910: { date: 'September 9, 2026', credit: 'C. Loberg' },
+  694: { date: 'September 12, 2026', credit: 'T. Carmack' },
+  620: { date: 'September 12, 2026', credit: 'T. Carmack' },
+  610: { date: 'September 5, 2026', credit: 'T. Carmack' },
+  89: { date: 'September 8, 2026', credit: 'explore.org' },
+  32: { date: 'September 14, 2026', credit: 'C. Loberg' },
+  164: { date: 'September 9, 2026', credit: 'C. Loberg' },
+  151: { date: 'September 12, 2026', credit: 'C. Loberg' },
+  903: { date: 'September 13, 2026', credit: 'C. Loberg' },
+};
+
 export const ROUND_LABELS = [
   { name: 'Round 1', left: 'Sept 22', right: 'Sept 23' },
   { name: 'Round 2', left: 'Sept 24', right: 'Sept 25' },

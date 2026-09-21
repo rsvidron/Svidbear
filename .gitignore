@@ -1,6 +1,7 @@
 node_modules/
 data/*.json
 public/vendor/
+public/bears/*.png
 .env
 .env.local
 .DS_Store

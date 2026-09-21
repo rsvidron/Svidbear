@@ -1315,3 +1315,52 @@ main {
     margin-right: auto;
   }
 }
+
+/* ── Bear photographs ───────────────────────────────────── */
+
+.slot__face {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+.slot--out .slot__face {
+  filter: grayscale(0.75);
+}
+.slot--picked .slot__face {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.modal__figure {
+  flex: none;
+  margin: 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.modal__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1036 / 633;
+  max-height: 34vh;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.modal__credit {
+  padding: 7px 26px 8px;
+  background: var(--surface-2);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.dossier__photo {
+  width: 100%;
+  aspect-ratio: 1036 / 633;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--surface-2);
+}
