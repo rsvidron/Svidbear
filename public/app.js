@@ -121,12 +121,16 @@ function buildSlot(match, index, bearId) {
   main.dataset.bear = bearId;
   main.setAttribute('aria-label', `Read the dossier for bear ${bearId}, ${bearLabel(bearId)}`);
 
+  // A phone shows this as a half-width tile; a desktop row shows it at 34px.
   const face = el('img', 'slot__face');
   face.src = `/bears/${bearId}-sm.webp`;
+  face.srcset = `/bears/${bearId}-sm.webp 192w, /bears/${bearId}-md.webp 448w`;
+  face.sizes = '(max-width: 1000px) 46vw, 34px';
   face.alt = '';
   face.loading = 'lazy';
-  face.width = 36;
-  face.height = 36;
+  face.decoding = 'async';
+  face.width = 192;
+  face.height = 192;
   main.append(face);
 
   const name = el('span', 'slot__name');
@@ -146,7 +150,7 @@ function buildSlot(match, index, bearId) {
     'aria-label',
     picked ? `Undo advancing bear ${bearId}` : `Advance bear ${bearId} to the next round`
   );
-  pick.append(el('span', 'slot__check', '✓'));
+  pick.append(el('span', 'slot__check', '✓'), el('span', 'slot__picklabel', picked ? 'Picked' : 'Pick'));
 
   row.append(main, pick);
   return row;
@@ -155,6 +159,9 @@ function buildSlot(match, index, bearId) {
 function buildMatch(match) {
   const node = el('div', 'match');
   node.dataset.match = match.id;
+  // A matchup still waiting on a feeder collapses to a compact card on a phone
+  // rather than reserving space for photos of bears nobody has picked yet.
+  if (participants(match).some((bear) => !bear)) node.classList.add('match--pending');
   if (match.round > 0) node.classList.add('has-in');
   if (match.id !== FINAL.id) node.classList.add('has-out');
   if (match.id === FINAL.id) node.classList.add('match--final', 'has-in');

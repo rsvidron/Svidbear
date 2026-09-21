@@ -28,9 +28,9 @@ Then open http://localhost:3000.
   local JSON API as a fallback.
 - `supabase/schema.sql` — the `brackets` table and its row-level security policies.
 
-Tapping a bear opens their dossier in a modal — vitals, identifying marks, bio, and the matchup
-they're in — with an Advance button. The check circle on the right of each row advances them in a
-single click, for anyone who already knows who they want.
+Tapping a bear opens their dossier — vitals, identifying marks, bio, and the matchup they're in —
+with an Advance button. The ✓ control advances them in one tap, for anyone who already knows who
+they want.
 
 Picks are stored by bear, not by slot position, so changing an early matchup automatically clears
 every later pick that depended on it.
@@ -122,3 +122,31 @@ npm run images
 ```
 
 Only the generated WebP is committed: 54MB of PNG becomes 1.5MB.
+
+## On a phone
+
+Most people will fill this in on a phone, so the layout is built for that first and widens to the
+desktop bracket, not the other way round.
+
+Under 1000px the seven columns unstack into round-by-round sections with sticky headers, and each
+matchup becomes two large photo tiles side by side — the same shape as the official poll graphic —
+with a full-width **Pick** button under each. Matchups still waiting on an earlier result collapse
+to a compact row instead of reserving space for bears nobody has picked yet. Between 620px and
+1000px, tablets fit several matchups across.
+
+The dossier opens as a bottom sheet pinned to the bottom of the viewport, with its own scroll and
+the actions always in reach of a thumb.
+
+Specific iOS things that are handled:
+
+- `viewport-fit=cover` plus `env(safe-area-inset-bottom)` on the tray and sheet, so nothing hides
+  behind the home indicator
+- `dvh` units, so Safari's collapsing toolbars don't crop the sheet
+- 16px text inputs — anything smaller and iOS zooms the page when a field is focused
+- hover styles gated behind `@media (hover: none)` with `:active` feedback instead, so a tap does
+  not leave a stuck highlight
+- `-webkit-tap-highlight-color: transparent` and `overscroll-behavior: contain` on the sheet
+- tap targets at 44px+ for the primary controls
+- `theme-color` for both colour schemes, and the Apple web-app meta tags for Add to Home Screen
+
+The bracket photos use `srcset`: a 448px square on a phone tile, a 192px one in a desktop row.

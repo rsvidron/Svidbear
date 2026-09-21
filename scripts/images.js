@@ -5,7 +5,8 @@
  * two sizes the app actually uses, which are what gets committed:
  *
  *   <id>.webp     900px wide  — the photograph, shown in the dossier modal
- *   <id>-sm.webp  192x192     — a square crop of it, as the avatar in each bracket row
+ *   <id>-md.webp  448x448     — the square tile each bear gets on a phone
+ *   <id>-sm.webp  192x192     — the small avatar in a desktop bracket row
  *
  * Every source is the same explore.org layout: a June trading card, an arrow, and
  * a September card. We want the photographs, not the card art, so this lifts the
@@ -66,27 +67,32 @@ for (const file of sources) {
 
   const photo = await sharp(src).extract(region).toBuffer();
   const wide = path.join(dir, `${id}.webp`);
+  const medium = path.join(dir, `${id}-md.webp`);
   const small = path.join(dir, `${id}-sm.webp`);
 
   await sharp(photo).resize({ width: 900, withoutEnlargement: true }).webp({ quality: 80 }).toFile(wide);
 
   const focus = FOCUS[id];
-  const avatar = sharp(photo);
+  const size = Math.min(region.width, region.height);
+  let square;
   if (focus === undefined) {
-    avatar.resize({ width: 192, height: 192, fit: 'cover', position: sharp.strategy.attention });
+    square = await sharp(photo)
+      .resize({ width: size, height: size, fit: 'cover', position: sharp.strategy.attention })
+      .toBuffer();
   } else {
     // Square window centred on the focal point, clamped inside the photo.
-    const size = Math.min(region.width, region.height);
     const left = clamp(Math.round(region.width * focus - size / 2), 0, region.width - size);
     const top = clamp(Math.round((region.height - size) / 2), 0, region.height - size);
-    avatar.extract({ left, top, width: size, height: size }).resize(192, 192);
+    square = await sharp(photo).extract({ left, top, width: size, height: size }).toBuffer();
   }
-  await avatar.webp({ quality: 82 }).toFile(small);
 
-  after += fs.statSync(wide).size + fs.statSync(small).size;
-  console.log(
-    `${id}: ${region.width}x${region.height} -> ${(fs.statSync(wide).size / 1024).toFixed(0)}kb + ${(fs.statSync(small).size / 1024).toFixed(0)}kb`
-  );
+  // 448 covers a half-width tile on a 3x phone; 192 covers the 34px desktop avatar.
+  await sharp(square).resize(448, 448).webp({ quality: 74 }).toFile(medium);
+  await sharp(square).resize(192, 192).webp({ quality: 82 }).toFile(small);
+
+  after += fs.statSync(wide).size + fs.statSync(medium).size + fs.statSync(small).size;
+  const kb = (f) => (fs.statSync(f).size / 1024).toFixed(0);
+  console.log(`${id}: ${kb(wide)}kb + ${kb(medium)}kb + ${kb(small)}kb`);
 }
 
 const mb = (bytes) => (bytes / 1024 / 1024).toFixed(1);

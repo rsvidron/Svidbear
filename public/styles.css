@@ -1159,79 +1159,7 @@ main {
 
 /* ── Stacked layout for narrow screens ──────────────────── */
 
-@media (max-width: 1000px) {
-  :root {
-    --tray-h: 148px;
-  }
-
-  .board-scroll {
-    overflow-x: visible;
-    margin: 0;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .board {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-    min-width: 0;
-    min-height: 0;
-  }
-
-  .column {
-    order: var(--order, 0);
-  }
-
-  .col__head {
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: flex-start;
-    gap: 10px;
-    text-align: left;
-    margin-bottom: 14px;
-  }
-
-  .col__body {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-  }
-
-  .pair {
-    display: contents;
-  }
-
-  .pair--join::after,
-  .match::after,
-  .match::before {
-    display: none;
-  }
-
-  .champion {
-    padding: 18px;
-  }
-}
-
-@media (max-width: 560px) {
-  body {
-    font-size: 16px;
-  }
-  .facts > div {
-    padding-right: 16px;
-    margin-right: 16px;
-  }
-  .tray__actions {
-    width: 100%;
-  }
-  .field {
-    flex: 1 1 120px;
-    width: auto;
-  }
-  .roster__grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* Phone layout lives in the mobile section at the end of this file. */
 
 /* Centre column: the final match must stay at the board's midline, so the
    champion plate hangs below it without pushing the match off centre. */
@@ -1247,17 +1175,7 @@ main {
   bottom: 0;
 }
 
-@media (max-width: 1000px) {
-  .col__body--final {
-    position: static;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  .column[data-side='F'] .champion {
-    position: static;
-  }
-}
+
 
 /* ── Account controls ───────────────────────────────────── */
 
@@ -1302,19 +1220,7 @@ main {
   color: var(--accent);
 }
 
-@media (max-width: 560px) {
-  .tray__auth {
-    width: 100%;
-    padding-right: 0;
-    margin-right: 0;
-    border-right: 0;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: 8px;
-  }
-  .tray__who {
-    margin-right: auto;
-  }
-}
+
 
 /* ── Bear photographs ───────────────────────────────────── */
 
@@ -1393,4 +1299,427 @@ main {
 .slot__face--blank {
   background: var(--surface-2);
   border: 1px dashed var(--rule);
+}
+
+/* ═══ Touch and iOS behaviour ═══════════════════════════════════════════════ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The pick button carries a word on a phone and only the tick on a desktop. */
+.slot__picklabel {
+  display: none;
+}
+
+.modal__body {
+  overscroll-behavior: contain;
+}
+
+/* Dynamic viewport units keep the sheet clear of Safari's collapsing toolbars. */
+.modal {
+  max-height: min(86dvh, 760px);
+}
+
+/* A finger has no hover, so the pointer states must not stick after a tap. */
+@media (hover: none) {
+  .slot__main:hover {
+    background: transparent;
+  }
+  .slot__pick:hover .slot__check {
+    border-color: var(--rule);
+    color: transparent;
+  }
+  .slot--picked .slot__pick:hover .slot__check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fdf7f4;
+  }
+  .entry:hover,
+  .btn:hover:not(:disabled),
+  .theme-toggle:hover {
+    border-color: var(--rule);
+  }
+}
+
+.slot__main:active {
+  background: var(--surface-2);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* ═══ Phones and small tablets ══════════════════════════════════════════════ */
+
+@media (max-width: 1000px) {
+  :root {
+    --tray-h: 160px;
+  }
+
+  body {
+    font-size: 16px;
+    padding-bottom: calc(var(--tray-h) + env(safe-area-inset-bottom, 0px) + 20px);
+  }
+
+  /* Both axes, or a hidden overflow-y silently forces overflow-x to scroll
+     and breaks the sticky round headers. */
+  .board-scroll {
+    overflow: visible;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .board {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .column {
+    order: var(--order, 0);
+  }
+
+  .col__head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 10px;
+    text-align: left;
+    margin-bottom: 12px;
+    padding: 10px 0 8px;
+    background: var(--ground);
+  }
+
+  .col__body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .pair {
+    display: contents;
+  }
+
+  .pair--join::after,
+  .match::after,
+  .match::before {
+    display: none;
+  }
+
+  /* Two bears side by side, the way the official poll presents a matchup. */
+  .match {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .match__date {
+    position: static;
+    grid-column: 1 / -1;
+    padding: 0 2px;
+    background: transparent;
+  }
+
+  .slot {
+    flex-direction: column;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .slot + .slot {
+    border-top: 1px solid var(--rule);
+  }
+  .match .slot:first-of-type,
+  .match .slot:last-of-type {
+    border-radius: var(--radius);
+  }
+
+  .slot__main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+  }
+
+  .slot__face {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border-radius: 0;
+  }
+
+  .slot__body {
+    padding: 8px 10px 10px;
+  }
+  .slot__name {
+    font-size: 1rem;
+  }
+  .slot__meta {
+    font-size: 0.6rem;
+  }
+
+  .slot__pick {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    border-left: 0;
+    border-top: 1px solid var(--rule-soft);
+    background: var(--surface-2);
+  }
+
+  .slot__picklabel {
+    display: inline;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+  }
+
+  .slot--picked {
+    box-shadow: none;
+    border-color: var(--accent);
+  }
+  .column[data-side='R'] .slot--picked {
+    box-shadow: none;
+  }
+  .slot--picked .slot__pick {
+    background: var(--accent);
+  }
+  .slot--picked .slot__picklabel {
+    color: #fdf7f4;
+  }
+  .slot--picked .slot__check {
+    background: transparent;
+    border-color: rgba(253, 247, 244, 0.55);
+    color: #fdf7f4;
+  }
+
+  /* A matchup still waiting on a feeder stays a compact row. */
+  .match--pending {
+    grid-template-columns: 1fr;
+  }
+  .match--pending .slot {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .match--pending .slot__main {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+  }
+  .match--pending .slot__face {
+    width: 40px;
+    height: 40px;
+    aspect-ratio: auto;
+    border-radius: 3px;
+  }
+  .match--pending .slot__face--blank {
+    display: none;
+  }
+  .match--pending .slot__pick {
+    width: 54px;
+    min-height: 0;
+    border-top: 0;
+    border-left: 1px solid var(--rule-soft);
+    background: transparent;
+  }
+  .match--pending .slot__picklabel {
+    display: none;
+  }
+
+  .col__body--final {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .column[data-side='F'] .champion {
+    position: static;
+    padding: 18px;
+  }
+
+  /* Keep the eyebrow clear of the theme pill in the corner. */
+  .eyebrow {
+    padding-right: 92px;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 0;
+  }
+  .facts > div {
+    padding-right: 14px;
+    margin-right: 14px;
+  }
+  .facts > div:nth-child(2n) {
+    border-right: 0;
+    margin-right: 0;
+    padding-right: 0;
+  }
+
+  .roster__grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Tray: progress, then name and submit, then everything else ── */
+
+  .tray {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .tray__inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 16px 8px;
+  }
+
+  .tray__progress {
+    /* The base rule's flex-basis is a width when the tray is a row and a
+       height once it stacks, which stretched the tray to 200px tall. */
+    flex: none;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tray__actions {
+    display: grid;
+    /* minmax(0,...) or the text input's min-content width pushes the row
+       wider than the tray and the buttons run off the right edge. */
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'name submit submit'
+      'auth share reset';
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  #trayAuth {
+    grid-area: auth;
+    min-width: 0;
+    padding-right: 0;
+    margin-right: 0;
+    border-right: 0;
+  }
+  #trayAuth .btn {
+    min-height: 40px;
+    font-size: 0.82rem;
+  }
+  #entryName {
+    grid-area: name;
+    width: auto;
+    min-width: 0;
+    font-size: 16px; /* anything smaller and iOS zooms the page on focus */
+    min-height: 44px;
+  }
+  #submitBtn {
+    grid-area: submit;
+    min-height: 44px;
+    padding-inline: 16px;
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+  #shareBtn {
+    grid-area: share;
+  }
+  #resetBtn {
+    grid-area: reset;
+  }
+  #shareBtn,
+  #resetBtn {
+    background: transparent;
+    border-color: transparent;
+    color: var(--ink-faint);
+    font-weight: 500;
+    font-size: 0.82rem;
+    padding: 8px;
+    white-space: nowrap;
+    min-height: 40px;
+  }
+
+  .tray__status {
+    padding: 0 16px 8px;
+  }
+}
+
+/* ═══ The dossier becomes a bottom sheet ════════════════════════════════════ */
+
+@media (max-width: 700px) {
+  .modal,
+  .modal--narrow {
+    /* Pinned rather than auto-margined: a centred dialog drifts a few pixels
+       below the fold once Safari's toolbars are in play. */
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: 92vh;
+    max-height: 92dvh;
+    margin: 0;
+    border-radius: 14px 14px 0 0;
+    border-bottom: 0;
+  }
+
+  .modal__head {
+    padding: 18px 18px 14px;
+  }
+  .modal__body {
+    padding: 16px 18px 20px;
+  }
+  .modal__credit {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .modal__photo {
+    max-height: 30dvh;
+  }
+
+  .modal__foot {
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .modal__hint {
+    display: none;
+  }
+  .modal__foot .btn {
+    flex: 1;
+    min-height: 46px;
+  }
+
+  .modal__name {
+    font-size: 1.35rem;
+  }
+  .modal__id {
+    font-size: 1.8rem;
+  }
+}
+
+/* Tablets have room for more than one matchup across. */
+@media (min-width: 620px) and (max-width: 1000px) {
+  .col__body {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .col__head {
+    padding-top: 14px;
+  }
 }
