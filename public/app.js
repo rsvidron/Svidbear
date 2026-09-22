@@ -1,5 +1,5 @@
-import { BEARS, MATCHES, ROUND_LABELS, EVENT, PHOTOS } from '/data.js';
-import { createStore } from '/store.js';
+import { BEARS, MATCHES, ROUND_LABELS, EVENT, PHOTOS } from '/data.js?v=2';
+import { createStore } from '/store.js?v=2';
 
 const MATCH_BY_ID = new Map(MATCHES.map((m) => [m.id, m]));
 const FINAL = MATCHES[MATCHES.length - 1];
@@ -462,6 +462,14 @@ function renderAuth() {
 function openAuth(message) {
   const google = Boolean(store.providers?.google);
   const email = Boolean(store.providers?.email);
+
+  // Describe only what is actually on offer.
+  $('#authTagline').textContent =
+    google && email
+      ? 'One tap with Google, or we can email you a link instead. No password either way.'
+      : google
+        ? 'One tap with Google. No password to remember.'
+        : 'We email you a link that signs you straight in. No password to remember.';
 
   $('#authGoogle').hidden = !google;
   $('#authSplit').hidden = !(google && email);

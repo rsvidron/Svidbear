@@ -149,6 +149,24 @@ trouble.
 Then raise **Authentication → Rate Limits → "Rate limit for sending emails."** Configuring SMTP does
 not lift it, and the failure looks identical to having no SMTP at all.
 
+## Caching
+
+Railway's edge puts `max-age=14400` on anything static-looking, and these filenames carry no
+content hash — so without intervention a deploy takes four hours to reach anyone who has already
+visited the site. `server.js` sets `Cache-Control` explicitly to override it:
+
+| What | Header | Why |
+| --- | --- | --- |
+| `public/bears/*` | `public, max-age=86400` | photos are stable and worth caching |
+| everything else | `no-cache` | code must revalidate; ETags make that a 304, not a refetch |
+
+`no-cache` does not mean "never cache" — it means "check before reusing", which is exactly right
+for unhashed application code.
+
+The module URLs carry a `?v=` suffix, bumped once when this was discovered, so browsers already
+holding a stale copy picked up the fix rather than waiting out the old edge cache. With the headers
+in place it should not need bumping again.
+
 ## Photos
 
 Each bear's September portrait comes from the explore.org bracket cards. `scripts/images.js` lifts

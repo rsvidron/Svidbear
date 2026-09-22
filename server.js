@@ -125,12 +125,27 @@ app.get('/vendor/supabase.js', (_req, res) =>
   })
 );
 
-app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+// Railway's edge puts a 4-hour cache on anything static-looking. These filenames
+// carry no content hash, so without saying otherwise a deploy would take four
+// hours to reach anyone who had already visited. Photos are stable and worth
+// caching; code must revalidate, which ETags make cheap (a 304, not a refetch).
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    extensions: ['html'],
+    setHeaders(res, filePath) {
+      const isPhoto = filePath.includes(`${path.sep}bears${path.sep}`);
+      res.setHeader('Cache-Control', isPhoto ? 'public, max-age=86400' : 'no-cache');
+    },
+  })
+);
 
 // Client-side routes: the app shell answers, and the browser reads the path.
 // Enumerated rather than caught, so each returns a real 200 instead of a 404
 // that happens to render.
-const sendApp = (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html'));
+const sendApp = (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+};
 app.get('/pool', sendApp);
 app.get('/b/:id', sendApp);
 
