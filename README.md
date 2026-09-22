@@ -91,8 +91,19 @@ unofficial pool — official votes are cast at [fatbearweek.org](https://fatbear
 
 ## Accounts and the database
 
-Sign-in is a magic link: you enter an email, Supabase sends a link, clicking it signs you in. No
-passwords are handled anywhere in this app.
+Sign-in is Google, with a magic link as a fallback. No passwords are handled anywhere in this app.
+
+The sheet only offers what the project actually has switched on: it reads `/auth/v1/settings` at
+boot and shows the Google button, the email form, or both. Enable Google and it appears; there is
+no build step or code change to make.
+
+Google avoids email entirely, which sidesteps deliverability altogether — see **Email delivery**
+for why that matters. To turn it on:
+
+1. Google Cloud Console → **APIs & Services → Credentials → Create OAuth client ID**, type
+   *Web application*.
+2. Authorised redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`.
+3. Paste the client ID and secret into Supabase → **Authentication → Providers → Google**.
 
 Brackets live in Postgres under row-level security — the pool is public to read, and a bracket is
 writable only by the account that owns it. One bracket per person; submitting again updates it.

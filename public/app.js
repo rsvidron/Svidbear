@@ -443,7 +443,7 @@ function renderAuth() {
   bar.replaceChildren();
 
   if (account) {
-    bar.append(el('span', 'tray__who', account.email));
+    bar.append(el('span', 'tray__who', account.name || account.email));
     const out = el('button', 'btn btn--quiet', 'Sign out');
     out.type = 'button';
     out.addEventListener('click', async () => {
@@ -460,9 +460,19 @@ function renderAuth() {
 }
 
 function openAuth(message) {
+  const google = Boolean(store.providers?.google);
+  const email = Boolean(store.providers?.email);
+
+  $('#authGoogle').hidden = !google;
+  $('#authSplit').hidden = !(google && email);
+  $('#authEmailBlock').hidden = !email;
+  $('#authSubmit').hidden = !email;
+
   setAuthMessage(message ?? AUTH_BLURB);
   $('#authModal').showModal();
-  $('#authEmail').focus();
+  // Google first when it is on: it is one tap and sends no email.
+  if (google) $('#authGoogle').focus();
+  else if (email) $('#authEmail').focus();
 }
 
 function initAuth() {
@@ -473,6 +483,19 @@ function initAuth() {
     btn.addEventListener('click', () => dialog.close());
   }
   closeOnBackdrop(dialog);
+
+  $('#authGoogle').addEventListener('click', async () => {
+    const button = $('#authGoogle');
+    button.disabled = true;
+    setAuthMessage('Redirecting to Google…');
+    try {
+      persist(); // the page is about to navigate away
+      await store.signInWithGoogle();
+    } catch (err) {
+      setAuthMessage(err.message, 'error');
+      button.disabled = false;
+    }
+  });
 
   $('#authForm').addEventListener('submit', async (ev) => {
     ev.preventDefault();
@@ -498,12 +521,12 @@ function initAuth() {
     if (user) {
       dialog.close();
       if (!$('#entryName').value.trim()) {
-        entryName = user.email.split('@')[0];
+        entryName = user.name || user.email?.split('@')[0] || '';
         $('#entryName').value = entryName;
         persist();
       }
       if (signedIn && authReady) {
-        setStatus(`Signed in as ${user.email}.`);
+        setStatus(`Signed in as ${user.name || user.email}.`);
         if (isComplete()) submitBracket();
       }
     }

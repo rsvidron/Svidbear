@@ -46,6 +46,22 @@ async function supabaseStore({ url, key }) {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
 
+  // Which sign-in methods the project actually has switched on, so the UI can
+  // offer exactly those rather than a button that errors when pressed.
+  let providers = { google: false, email: true };
+  try {
+    const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } });
+    if (res.ok) {
+      const settings = await res.json();
+      providers = {
+        google: Boolean(settings.external?.google),
+        email: Boolean(settings.external?.email),
+      };
+    }
+  } catch {
+    // keep the defaults; the email form is the safe assumption
+  }
+
   // Resolves once the magic-link code in the URL (if any) has been exchanged.
   const { data: initial } = await sb.auth.getSession();
   let user = initial.session?.user ?? null;
@@ -57,7 +73,14 @@ async function supabaseStore({ url, key }) {
   });
 
   function currentUser() {
-    return user ? { id: user.id, email: user.email } : null;
+    if (!user) return null;
+    const meta = user.user_metadata ?? {};
+    return {
+      id: user.id,
+      email: user.email,
+      name: meta.full_name || meta.name || '',
+      avatar: meta.avatar_url || '',
+    };
   }
 
   function shape(row) {
@@ -82,7 +105,16 @@ async function supabaseStore({ url, key }) {
   return {
     mode: 'supabase',
     needsAuth: true,
+    providers,
     currentUser,
+
+    async signInWithGoogle() {
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: location.origin },
+      });
+      if (error) throw fail(error, 'Could not start Google sign-in.');
+    },
     onAuthChange(fn) {
       listeners.add(fn);
       fn(currentUser());
@@ -146,7 +178,11 @@ function localStore() {
   return {
     mode: 'local',
     needsAuth: false,
+    providers: { google: false, email: false },
     currentUser: () => null,
+    async signInWithGoogle() {
+      throw new Error('Google sign-in needs Supabase keys. Running without them for now.');
+    },
     onAuthChange(fn) {
       fn(null);
     },

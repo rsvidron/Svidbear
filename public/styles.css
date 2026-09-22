@@ -2103,3 +2103,59 @@ body[data-view='guest'] {
     min-height: 44px;
   }
 }
+
+/* ── Google sign-in ─────────────────────────────────────── */
+
+.btn--google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+.btn--google:hover:not(:disabled) {
+  border-color: var(--ink-faint);
+}
+.btn--google:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.btn__g {
+  flex: none;
+  width: 19px;
+  height: 19px;
+}
+
+/* A rule with the word sitting in the gap. */
+.authsplit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 0;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.authsplit::before,
+.authsplit::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+@media (max-width: 700px) {
+  .btn--google {
+    min-height: 52px;
+  }
+}
