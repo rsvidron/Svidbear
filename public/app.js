@@ -1,5 +1,5 @@
-import { BEARS, MATCHES, ROUND_LABELS, EVENT, PHOTOS } from '/data.js?v=2';
-import { createStore } from '/store.js?v=2';
+import { BEARS, MATCHES, ROUND_LABELS, EVENT, PHOTOS, RESULTS, ROUND_POINTS } from '/data.js?v=3';
+import { createStore } from '/store.js?v=3';
 
 const MATCH_BY_ID = new Map(MATCHES.map((m) => [m.id, m]));
 const FINAL = MATCHES[MATCHES.length - 1];
@@ -91,6 +91,70 @@ function picksAsIndices() {
   });
 }
 
+/* ── Results and scoring ────────────────────────────────── */
+
+const DECIDED = MATCHES.filter((m) => RESULTS[m.id]);
+const MAX_POINTS = MATCHES.reduce((sum, m) => sum + ROUND_POINTS[m.round], 0);
+
+/** How the actual tournament played out, independent of anyone's picks. */
+const ACTUAL = (() => {
+  const byMatch = {};
+  for (const match of MATCHES) {
+    const result = RESULTS[match.id];
+    if (result) byMatch[match.id] = result.winner;
+  }
+  return byMatch;
+})();
+
+/** Real participants of a matchup, following actual results rather than picks. */
+function actualParticipants(match) {
+  if (match.slots) return match.slots.slice();
+  return match.from.map((id) => ACTUAL[id] ?? null);
+}
+
+/** A bear is out once it has lost a decided matchup. */
+const ELIMINATED = (() => {
+  const out = new Set();
+  for (const match of DECIDED) {
+    for (const bear of actualParticipants(match)) {
+      if (bear && bear !== ACTUAL[match.id]) out.add(bear);
+    }
+  }
+  return out;
+})();
+
+const isEliminated = (bearId) => ELIMINATED.has(bearId);
+
+/**
+ * Score a bracket against the results. A matchup counts when the bear you
+ * advanced is the one that actually won it — how your tree reached that
+ * matchup does not matter, which is the usual convention for bracket pools.
+ */
+function scoreBracket(bracketPicks) {
+  let points = 0;
+  let correct = 0;
+  let live = 0; // points still reachable from matchups not yet decided
+
+  for (const match of MATCHES) {
+    const worth = ROUND_POINTS[match.round];
+    const actual = ACTUAL[match.id];
+    const pick = bracketPicks[match.id];
+    if (!actual) {
+      if (pick && !isEliminated(pick)) live += worth;
+      continue;
+    }
+    if (pick && pick === actual) {
+      points += worth;
+      correct += 1;
+    }
+  }
+  return { points, correct, live, decided: DECIDED.length };
+}
+
+function scoreIndices(indices) {
+  return scoreBracket(picksFromIndices(indices));
+}
+
 /* ── Rendering ──────────────────────────────────────────── */
 
 function bearLabel(id) {
@@ -129,6 +193,7 @@ function buildSlot(match, index, bearId) {
   const picked = picks[match.id] === bearId;
   if (picked) row.classList.add('slot--picked');
   else if (picks[match.id]) row.classList.add('slot--out');
+  if (isEliminated(bearId)) row.classList.add('slot--eliminated');
 
   const main = el('button', 'slot__main');
   main.type = 'button';
@@ -188,8 +253,26 @@ function buildMatch(match) {
 
   node.append(el('span', 'match__date', match.date));
   participants(match).forEach((bearId, i) => node.append(buildSlot(match, i, bearId)));
+
+  const result = RESULTS[match.id];
+  if (result) {
+    node.classList.add('match--decided');
+    const pick = picks[match.id];
+    const hit = pick === result.winner;
+    if (pick) node.classList.add(hit ? 'match--hit' : 'match--miss');
+
+    const strip = el('div', 'match__result');
+    strip.append(el('span', 'match__verdict', pick ? (hit ? '✓' : '✗') : '—'));
+    strip.append(
+      el('span', 'match__won', `${bearLabel(result.winner)} won`),
+      el('span', 'match__votes', formatVotes(Math.max(...result.votes)))
+    );
+    node.append(strip);
+  }
   return node;
 }
+
+const formatVotes = (n) => n.toLocaleString('en-US');
 
 function buildColumn(side, round, matches) {
   const column = el('div', 'column');
@@ -549,7 +632,14 @@ function updateTray() {
   $('#trayCount').textContent = `${count} of ${MATCHES.length}`;
   $('#factPicks').textContent = String(count);
   $('#meterFill').style.width = `${(count / MATCHES.length) * 100}%`;
-  $('#trayChamp').textContent = champ ? `${bearLabel(champ)} (${champ}) takes it` : 'no champion yet';
+
+  if (DECIDED.length) {
+    const { points, correct } = scoreBracket(picks);
+    $('#trayChamp').textContent = `${points} pts · ${correct}/${DECIDED.length} right`;
+    $('#factScore').textContent = `${points}`;
+  } else {
+    $('#trayChamp').textContent = champ ? `${bearLabel(champ)} (${champ}) takes it` : 'no champion yet';
+  }
   $('#submitBtn').disabled = !isComplete();
 }
 
@@ -696,11 +786,14 @@ function exitViewing(to = 'bracket') {
 
 /* ── Switching between the two views ────────────────────── */
 
+const VIEWS = ['bracket', 'pool', 'results'];
+
 function setView(next, { push = true } = {}) {
-  view = next === 'pool' ? 'pool' : 'bracket';
+  view = VIEWS.includes(next) ? next : 'bracket';
   $('#viewBracket').hidden = view !== 'bracket';
   $('#roster').hidden = view !== 'bracket';
   $('#viewPool').hidden = view !== 'pool';
+  $('#viewResults').hidden = view !== 'results';
   $('.tray').hidden = view !== 'bracket' || isViewing();
 
   for (const tab of document.querySelectorAll('.viewnav__tab')) {
@@ -710,56 +803,184 @@ function setView(next, { push = true } = {}) {
     else tab.removeAttribute('aria-current');
   }
 
-  if (push) history.replaceState(null, '', view === 'pool' ? '/pool' : '/');
+  if (push) history.replaceState(null, '', view === 'bracket' ? '/' : `/${view}`);
   if (!isViewing()) syncGuestPicker();
-  if (view === 'pool') {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-    loadPool();
-  }
+  if (view !== 'bracket') window.scrollTo({ top: 0, behavior: 'auto' });
+  if (view === 'pool') loadPool();
+  if (view === 'results') renderResults();
 }
 
 /* ── The pool page ──────────────────────────────────────── */
 
 function renderTally(entries) {
+  const tally = $('#tally');
+  const list = $('#tallyList');
+  list.replaceChildren();
+
+  // Once results are in, who is winning matters more than who is popular.
+  if (DECIDED.length && entries.length) {
+    tally.hidden = false;
+    $('#tallyTitle').textContent = `Standings — ${DECIDED.length} of ${MATCHES.length} matchups decided`;
+    list.classList.add('tally__list--standings');
+
+    const ranked = entries
+      .map((entry) => ({ entry, ...scoreIndices(entry.picks) }))
+      .sort((a, b) => b.points - a.points || b.live - a.live || a.entry.name.localeCompare(b.entry.name));
+
+    const best = ranked[0]?.points || 1;
+    let place = 0;
+    let lastPoints = null;
+
+    ranked.forEach((row, i) => {
+      if (row.points !== lastPoints) place = i + 1;
+      lastPoints = row.points;
+
+      const li = el('li', row.entry.mine ? 'tally__row standing standing--mine' : 'tally__row standing');
+      li.append(el('span', 'standing__place', `${place}`));
+
+      const champ = championOf(row.entry.picks);
+      if (champ) {
+        const face = el('img', 'tally__face');
+        face.src = `/bears/${champ}-sm.webp`;
+        face.alt = '';
+        face.loading = 'lazy';
+        face.width = 40;
+        face.height = 40;
+        if (isEliminated(champ)) face.classList.add('tally__face--out');
+        li.append(face);
+      }
+
+      const label = el('div', 'tally__label standing__label');
+      label.append(el('span', 'tally__name', row.entry.name));
+      const note = champ
+        ? `${bearLabel(champ)} ${isEliminated(champ) ? '— out' : 'still in'}`
+        : 'incomplete';
+      label.append(el('span', 'standing__note', note));
+      li.append(label);
+
+      const bar = el('div', 'tally__bar');
+      const fill = el('span', 'tally__fill');
+      fill.style.width = `${(row.points / best) * 100}%`;
+      bar.append(fill);
+      li.append(bar);
+
+      const score = el('div', 'standing__score');
+      score.append(el('strong', null, `${row.points}`), el('span', null, `/${MAX_POINTS}`));
+      li.append(score);
+      list.append(li);
+    });
+    return;
+  }
+
+  // Before any results, fall back to who the field is backing.
+  list.classList.remove('tally__list--standings');
   const counts = new Map();
   for (const entry of entries) {
     const champ = championOf(entry.picks);
     if (champ) counts.set(champ, (counts.get(champ) ?? 0) + 1);
   }
-
-  const tally = $('#tally');
-  const list = $('#tallyList');
-  list.replaceChildren();
   if (!counts.size) {
     tally.hidden = true;
     return;
   }
   tally.hidden = false;
+  $('#tallyTitle').textContent = 'Who the pool is backing for the crown';
 
   const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const leader = ranked[0][1];
-
   for (const [bearId, count] of ranked) {
     const row = el('li', 'tally__row');
-
     const face = el('img', 'tally__face');
     face.src = `/bears/${bearId}-sm.webp`;
     face.alt = '';
     face.loading = 'lazy';
     face.width = 40;
     face.height = 40;
-
     const label = el('div', 'tally__label');
     label.append(el('span', 'tally__num', bearId), el('span', 'tally__name', bearLabel(bearId)));
-
     const bar = el('div', 'tally__bar');
     const fill = el('span', 'tally__fill');
     fill.style.width = `${(count / leader) * 100}%`;
     bar.append(fill);
-
     const share = Math.round((count / entries.length) * 100);
     row.append(face, label, bar, el('span', 'tally__count', `${count} · ${share}%`));
     list.append(row);
+  }
+}
+
+/* ── Results page ───────────────────────────────────────── */
+
+function renderResults() {
+  const head = $('#resultsSummary');
+  const list = $('#resultsList');
+  list.replaceChildren();
+
+  const remaining = MATCHES.length - DECIDED.length;
+  head.textContent = remaining
+    ? `${DECIDED.length} of ${MATCHES.length} matchups decided. ${remaining} still to come.`
+    : 'Every matchup decided.';
+
+  let round = -1;
+  for (const match of MATCHES) {
+    if (match.round !== round) {
+      round = match.round;
+      const label = ROUND_LABELS[round];
+      list.append(
+        el('h3', 'results__round', `${label.name} · ${label.left}${label.right !== label.left ? ` and ${label.right}` : ''}`)
+      );
+    }
+
+    const result = RESULTS[match.id];
+    const bears = actualParticipants(match);
+    const card = el('article', result ? 'bout bout--decided' : 'bout');
+
+    if (!result) {
+      const known = bears.filter(Boolean);
+      card.append(
+        el(
+          'p',
+          'bout__pending',
+          known.length === 2
+            ? `${bearLabel(known[0])} vs ${bearLabel(known[1])} — votes ${match.date}`
+            : `Awaiting earlier results — votes ${match.date}`
+        )
+      );
+      list.append(card);
+      continue;
+    }
+
+    const total = result.votes[0] + result.votes[1];
+    bears.forEach((bearId, i) => {
+      if (!bearId) return;
+      const won = bearId === result.winner;
+      const side = el('div', won ? 'bout__side bout__side--won' : 'bout__side');
+
+      const face = el('img', 'bout__face');
+      face.src = `/bears/${bearId}-sm.webp`;
+      face.alt = '';
+      face.loading = 'lazy';
+      face.width = 44;
+      face.height = 44;
+
+      const body = el('div', 'bout__body');
+      const nameRow = el('div', 'bout__nameRow');
+      nameRow.append(el('span', 'bout__num', bearId), el('span', 'bout__name', bearLabel(bearId)));
+      if (won) nameRow.append(el('span', 'bout__badge', 'won'));
+      body.append(nameRow);
+
+      const bar = el('div', 'bout__bar');
+      const fill = el('span', 'bout__fill');
+      fill.style.width = `${(result.votes[i] / total) * 100}%`;
+      bar.append(fill);
+      body.append(bar);
+
+      const pct = Math.round((result.votes[i] / total) * 100);
+      body.append(el('span', 'bout__votes', `${formatVotes(result.votes[i])} votes · ${pct}%`));
+
+      side.append(face, body);
+      card.append(side);
+    });
+    list.append(card);
   }
 }
 
@@ -970,7 +1191,8 @@ async function init() {
   }
 
   initAuth();
-  setView(location.pathname === '/pool' ? 'pool' : 'bracket', { push: false });
+  if (DECIDED.length) $('#factScoreCell').hidden = false;
+  setView(location.pathname.replace('/', '') || 'bracket', { push: false });
   loadPool();
 
   if (pathCode) {

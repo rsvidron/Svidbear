@@ -249,6 +249,31 @@ export const PHOTOS = {
   903: { date: 'September 13, 2026', credit: 'C. Loberg' },
 };
 
+/**
+ * Official results, from explore.org. Keyed by matchup; `votes` is in the same
+ * order as that matchup's two slots, so a slot can show its own tally.
+ *
+ * Add the semifinals after Sept 28 and the final after Sept 29 — everything
+ * downstream (scores, standings, the results page) keys off this one object.
+ */
+export const RESULTS = {
+  m1: { winner: '132', votes: [171619, 46449] },
+  m2: { winner: '806', votes: [135510, 74679] },
+  m3: { winner: '909', votes: [155899, 51493] },
+  m4: { winner: '910', votes: [84145, 98126] },
+  m5: { winner: '620', votes: [17589, 149449] },
+  m6: { winner: '89', votes: [20635, 140140] },
+  m7: { winner: '164', votes: [46053, 118731] },
+  m8: { winner: '151', votes: [134153, 31087] },
+  m9: { winner: '132', votes: [75035, 57600] },
+  m10: { winner: '910', votes: [26766, 104545] },
+  m11: { winner: '89', votes: [6173, 123416] },
+  m12: { winner: '164', votes: [84514, 45775] },
+};
+
+/** Points per correct pick, by round — a late call is worth more than an early one. */
+export const ROUND_POINTS = [1, 2, 4, 8];
+
 export const ROUND_LABELS = [
   { name: 'Round 1', left: 'Sept 22', right: 'Sept 23' },
   { name: 'Round 2', left: 'Sept 24', right: 'Sept 25' },

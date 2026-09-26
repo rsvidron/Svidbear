@@ -41,6 +41,7 @@
           <div><dt>Crowned</dt><dd>Sept 29</dd></div>
           <div><dt>Field</dt><dd>16 bears</dd></div>
           <div><dt>Picks</dt><dd><span id="factPicks">0</span>/15</dd></div>
+          <div id="factScoreCell" hidden><dt>Your score</dt><dd><span id="factScore">0</span></dd></div>
         </dl>
 
         <nav class="viewnav" aria-label="Sections">
@@ -48,6 +49,7 @@
           <a class="viewnav__tab" href="/pool" data-view="pool">
             The pool <span class="viewnav__count" id="navCount"></span>
           </a>
+          <a class="viewnav__tab" href="/results" data-view="results">Results</a>
         </nav>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch theme">
@@ -106,7 +108,7 @@
           </div>
 
           <div class="tally" id="tally" hidden>
-            <h3 class="tally__title">Who the pool is backing for the crown</h3>
+            <h3 class="tally__title" id="tallyTitle">Who the pool is backing for the crown</h3>
             <ol class="tally__list" id="tallyList"></ol>
           </div>
 
@@ -114,6 +116,20 @@
           <div id="poolBody" class="pool__body">
             <p class="pool__empty">No brackets in yet. Be the first.</p>
           </div>
+        </section>
+      </div>
+
+      <div id="viewResults" hidden>
+        <section class="results" aria-labelledby="resultsTitle">
+          <div class="section-head">
+            <h2 id="resultsTitle">Results</h2>
+            <p class="section-note" id="resultsSummary"></p>
+          </div>
+          <div id="resultsList" class="results__list"></div>
+          <p class="voting-note">
+            Vote counts from explore.org. This pool is unofficial — the official vote is at
+            <a href="https://fatbearweek.org" rel="noopener">fatbearweek.org</a>.
+          </p>
         </section>
       </div>
 

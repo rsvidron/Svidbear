@@ -2159,3 +2159,270 @@ body[data-view='guest'] {
     min-height: 52px;
   }
 }
+
+/* ═══ Results ═══════════════════════════════════════════════════════════════ */
+
+.match--decided {
+  border-color: var(--rule);
+}
+
+.match__result {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 11px;
+  border-top: 1px solid var(--rule);
+  background: var(--surface-2);
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.match__verdict {
+  flex: none;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--ink-faint);
+}
+.match--hit .match__verdict {
+  color: var(--spruce);
+}
+.match--miss .match__verdict {
+  color: var(--accent);
+}
+
+.match__won {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.match__votes {
+  margin-left: auto;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A bear that has actually lost reads as gone, whoever picked it. */
+.slot--eliminated .slot__face {
+  filter: grayscale(1) brightness(0.8);
+}
+.slot--eliminated .slot__num,
+.slot--eliminated .slot__nick {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.7;
+}
+
+/* ── Standings ──────────────────────────────────────────── */
+
+.tally__list--standings .tally__row {
+  grid-template-columns: 26px 40px minmax(120px, 1.2fr) 1fr auto;
+}
+
+.standing__place {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.standing--mine {
+  outline: 1px solid var(--spruce);
+  outline-offset: 5px;
+  border-radius: 2px;
+}
+
+.standing__label {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.standing__note {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.standing__score {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.standing__score strong {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.standing__score span {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+}
+
+.tally__face--out {
+  filter: grayscale(1) brightness(0.8);
+}
+
+/* ── Results page ───────────────────────────────────────── */
+
+.results__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.results__round {
+  margin: 22px 0 2px;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.results__round:first-child {
+  margin-top: 0;
+}
+
+.bout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.bout__side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+}
+
+.bout__side--won {
+  background: var(--spruce-wash);
+}
+
+.bout__face {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 3px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+.bout__side:not(.bout__side--won) .bout__face {
+  filter: grayscale(1) brightness(0.85);
+}
+
+.bout__body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.bout__nameRow {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.bout__num {
+  flex: none;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+.bout__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bout__badge {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--spruce);
+  color: #f4f8f5;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.bout__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.bout__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink-faint);
+}
+.bout__side--won .bout__fill {
+  background: var(--spruce);
+}
+
+.bout__votes {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+.bout__pending {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--surface);
+  font-style: italic;
+  color: var(--ink-faint);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 1000px) {
+  .bout {
+    grid-template-columns: 1fr;
+  }
+  .tally__list--standings .tally__row {
+    grid-template-columns: 22px 34px 1fr auto;
+  }
+  .tally__list--standings .tally__bar {
+    grid-column: 3 / -1;
+    grid-row: 2;
+  }
+  .match__result {
+    grid-column: 1 / -1;
+    border-radius: 0;
+  }
+}

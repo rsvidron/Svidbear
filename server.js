@@ -147,6 +147,7 @@ const sendApp = (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 };
 app.get('/pool', sendApp);
+app.get('/results', sendApp);
 app.get('/b/:id', sendApp);
 
 app.use((req, res) => {

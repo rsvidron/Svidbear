@@ -35,6 +35,29 @@ they want.
 Picks are stored by bear, not by slot position, so changing an early matchup automatically clears
 every later pick that depended on it.
 
+### Results and scoring
+
+`RESULTS` in `data.js` holds the official outcome of each matchup — winner plus the vote split —
+and is the single thing to edit as the tournament progresses. Standings, the results page, the
+score in the masthead and the tick or cross on each matchup all derive from it. With `RESULTS`
+empty the app behaves exactly as it did before any votes were counted.
+
+Points are weighted by round, so a late call is worth more than an early one:
+
+| Round | Per correct pick | Round total |
+| --- | --- | --- |
+| Round 1 | 1 | 8 |
+| Round 2 | 2 | 8 |
+| Semifinal | 4 | 8 |
+| Final | 8 | 8 |
+
+That comes to **32 points** for a perfect bracket, with each round worth the same in aggregate.
+
+A matchup scores when the bear you advanced is the one that actually won it — regardless of how
+your tree reached that matchup, which is the usual convention for bracket pools. Someone whose
+champion has already been knocked out still scores for everything they got right; the standings
+mark them "— out" so a capped ceiling is visible at a glance.
+
 ### Sharing
 
 | What | Link |
